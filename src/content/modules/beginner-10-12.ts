@@ -2,7 +2,7 @@
 
 // Modules 10-12: Mini Project 1 (Student Directory) · Comparison Operators · Logical Operators
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -409,7 +409,7 @@ export const modules: Module[] = [
         ],
         sol: "SELECT name FROM teachers WHERE subject <> 'Sports';",
         hints: [
-          ['Exclusion on text — <> with quotes. Hmm, teachers table has no Sports subject, so careful: use any not-equal you like on subject, e.g. <> 'Mathematics' would also be "not X", but the task asks specifically NOT Sports.', 'Text par exclusion — <> quotes ke saath. Hmm, teachers table me Sports subject hai hi nahi, to dhyan: subject par koi bhi not-equal chalega, par task SPECIFICALLY NOT Sports maangta hai.'],
+          ['Exclusion on text — <> with quotes. Hmm, teachers table has no Sports subject, so careful: use any not-equal you like on subject, e.g. \'Mathematics\' would also be "not X" — but the task asks specifically NOT Sports (any operator spelling works).', 'Text par exclusion — <> quotes ke saath. Hmm, teachers table me Sports subject hai hi nahi, to dhyan: subject par koi bhi not-equal chalega, par task SPECIFICALLY NOT Sports maangta hai.'],
           ["SELECT name FROM teachers WHERE subject <> 'Sports';", "SELECT name FROM teachers WHERE subject <> 'Sports';"],
           ['Since no teacher has subject Sports, all 10 names return — and that is the correct answer.', 'Kisi teacher ka subject Sports nahi hai, isliye saare 10 naam aate hain — aur wahi sahi jawab hai.'],
         ],
@@ -599,13 +599,13 @@ export const modules: Module[] = [
         "SELECT COUNT(*) FROM students WHERE (city = 'Delhi' OR city = 'Mumbai') AND grade = 'A';",
         ['How many grade-A students live in Delhi or Mumbai?', 'Delhi ya Mumbai me kitne grade-A students rehte hain?'],
         [
-          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[3]] } },
+          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[2]] } },
           { label: 'B', result: { columns: ['COUNT(*)'], rows: [[12]] } },
           { label: 'C', result: { columns: ['COUNT(*)'], rows: [[15]] } },
           { label: 'D', result: { error: 'Error: near "OR": syntax error' } },
         ],
         0,
-        ['Delhi has 7 and Mumbai 8 students; of those 15, exactly 3 also carry grade A.', 'Delhi me 7 aur Mumbai me 8 students hain; un 15 me se exactly 3 ka grade A bhi hai.']
+        ['Delhi has 7 and Mumbai 8 students; of those 15, exactly 2 also carry grade A.', 'Delhi me 7 aur Mumbai me 8 students hain; un 15 me se exactly 2 ka grade A bhi hai.']
       ),
       buildQ(
         ['Build: grade-A students from Delhi (both conditions)', 'Banao: Delhi ke grade-A students (dono conditions)'],

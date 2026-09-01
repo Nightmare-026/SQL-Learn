@@ -80,7 +80,7 @@ let projectsCache: Project[] | null = null;
 export async function loadProjects(): Promise<Project[]> {
   if (projectsCache) return projectsCache;
   const m = await import('@/content/projects/index');
-  projectsCache = m.PROJECTS;
+  projectsCache = m.ALL_PROJECTS;
   return projectsCache;
 }
 

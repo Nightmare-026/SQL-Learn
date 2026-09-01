@@ -2,7 +2,7 @@
 
 // Modules 30-32: Mini Project 2 (Sales Analytics) · SELECT Subqueries · EXISTS
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -358,13 +358,13 @@ export const modules: Module[] = [
         'SELECT name, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS orders FROM customers c ORDER BY id LIMIT 2;',
         ['What appears beside the first two customers?', 'Pehle do customers ke saath kya dikhta hai?'],
         [
-          { label: 'A', result: { columns: ['name', 'orders'], rows: [['Ananya Mehta', 5], ['Aisha Joshi', 8]] } },
+          { label: 'A', result: { columns: ['name', 'orders'], rows: [['Ananya Mehta', 3], ['Aisha Joshi', 7]] } },
           { label: 'B', result: { columns: ['name', 'orders'], rows: [['Ananya Mehta', 500]] } },
           { label: 'C', result: { columns: ['name'], rows: [['Ananya Mehta'], ['Aisha Joshi']] } },
           { label: 'D', result: { error: 'Error: no such column: c.id' } },
         ],
         0,
-        ['Each customer gets their OWN order count — 5 for Ananya, 8 for Aisha (per-row answers).', 'Har customer ko APNA order count milta hai — Ananya ko 5, Aisha ko 8 (per-row jawab).']
+        ['Each customer gets their OWN order count — 3 for Ananya, 7 for Aisha (per-row answers).', 'Har customer ko APNA order count milta hai — Ananya ko 3, Aisha ko 7 (per-row jawab).']
       ),
       buildQ(
         ['Build: each product with its own order-line count', 'Banao: har product apni order-line count ke saath'],
@@ -434,6 +434,7 @@ export const modules: Module[] = [
         hints: [
           ['Same shape as the count — but SUM(oi.quantity).', 'Count jaisa hi shape — par SUM(oi.quantity).'],
           ['Same shape as the count — but SUM(oi.quantity). — write the full statement with the correlated subquery.', 'Full statement likho correlated subquery ke saath.'],
+          ['Wrap the pattern: the inner query carries the aggregate over the joined tables.', 'Pattern likho: andar wali query joined tables par aggregate laati hai.'],
         ],
         rules: { ignoreRowOrder: false },
       }),
@@ -511,9 +512,9 @@ export const modules: Module[] = [
           'Positive side: customers WITH at least one order.',
           'Positive side: kam se kam ek order WALON wale customers.',
         ], { table: 'customers' }),
-        step('SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);', [
-          'The never-orderers — each once, no duplicates, NULL-proof.',
-          'Kabhi-order-na-karne wale — har ek ek baar, no duplicates, NULL-proof.',
+        step("SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered') LIMIT 5;", [
+          'Customers without a single delivered order — each once, no duplicates, NULL-proof.',
+          'Bina delivered order wale customers — har ek ek baar, no duplicates, NULL-proof.',
         ], { table: 'customers' }),
         step('SELECT name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id) LIMIT 5;', [
           'Products that have never appeared in any order line.',
@@ -534,9 +535,9 @@ export const modules: Module[] = [
       ],
     },
     examples: [
-      example('very_easy', 'SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);', [
-        'The never-orderers — a clean anti-join.',
-        'Kabhi-order-na-karne wale — saaf anti-join.',
+      example('very_easy', "SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered') LIMIT 6;", [
+        'Customers yet to receive a delivered order — a clean anti-join with a status filter.',
+        'Wo customers jinko abhi delivered order nahi mila — status filter ke saath saaf anti-join.',
       ]),
       example('easy', "SELECT name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'pending');", [
         'Customers chasing a pending order.',
@@ -584,16 +585,16 @@ export const modules: Module[] = [
         ['EXISTS returns a boolean; the engine stops at the first matching row, so column content is irrelevant.', 'EXISTS boolean deta hai; engine pehli matching row par rukta hai, isliye column content ki koi value nahi.']
       ),
       outputQ(
-        'SELECT COUNT(*) FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);',
-        ['How many customers have never placed an order?', 'Kitne customers ne kabhi order nahi diya?'],
+        "SELECT COUNT(*) FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered');",
+        ['How many customers have never RECEIVED a delivered order?', 'Kitne customers ko kabhi DELIVERED order nahi mila?'],
         [
-          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[1]] } },
+          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[34]] } },
           { label: 'B', result: { columns: ['COUNT(*)'], rows: [[0]] } },
-          { label: 'C', result: { columns: ['COUNT(*)'], rows: [[100]] } },
+          { label: 'C', result: { columns: ['COUNT(*)'], rows: [[66]] } },
           { label: 'D', result: { error: 'Error: no such column: c.id' } },
         ],
         0,
-        ['Only one customer — Isha Verma? check your run: exactly one customer has zero orders in this data.', 'Sirf ek customer — apni run me check karo: is data me exactly ek customer ke zero orders hain.']
+        ['34 customers have no delivered order yet — the status filter lives INSIDE the EXISTS subquery.', '34 customers ko abhi koi delivered order nahi mila — status filter EXISTS subquery ke ANDAR rehta hai.']
       ),
       buildQ(
         ['Build: customers with at least one delivered order (EXISTS)', 'Banao: kam se kam ek delivered order wale customers (EXISTS)'],
@@ -621,32 +622,33 @@ export const modules: Module[] = [
         hints: [
           ['Positive existence — EXISTS with the correlation.', 'Positive existence — correlation ke saath EXISTS.'],
           ['Positive existence — EXISTS with the correlation. — write the full statement with the correlated subquery.', 'Full statement likho correlated subquery ke saath.'],
+          ['Wrap the pattern: the inner query carries the aggregate over the joined tables.', 'Pattern likho: andar wali query joined tables par aggregate laati hai.'],
         ],
       }),
       task({
         d: 'easy',
         desc: [
-          'The ghost list: names of customers with ZERO orders (NOT EXISTS).',
-          'Ghost list: zero orders wale customers ke naam (NOT EXISTS).',
+          'The waiting list: names of customers who have NOT received a single delivered order yet (NOT EXISTS with a status filter).',
+          'Waiting list: un customers ke naam jinko abhi tak ek bhi DELIVERED order nahi mila (status filter ke saath NOT EXISTS).',
         ],
-        sol: 'SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);',
+        sol: "SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered');",
         hints: [
-          ['The anti-join keeps non-matchers.', 'Anti-join non-matchers rakhta hai.'],
-          ['SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);', 'SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);'],
-          ['Exactly one customer has never ordered.', 'Exactly ek customer ne kabhi order nahi diya.'],
+          ['The anti-join keeps non-matchers; the status filter goes INSIDE the inner query.', 'Anti-join non-matchers rakhta hai; status filter ANDAR wali query me jaata hai.'],
+          ["SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered');", "SELECT name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'delivered');"],
+          ['34 customers appear — everyone else has at least one delivered order.', '34 customers dikhte hain — baaki sab ke paas kam se kam ek delivered order hai.'],
         ],
       }),
       task({
         d: 'medium',
         desc: [
-          'The mystery shelf: names of products that have never appeared in any order line, but are IN stock (stock_quantity > 0).',
-          'Mystery shelf: un products ke naam jo kisi order line me kabhi nahi aaye, par stock ME hain (stock_quantity > 0).',
+          'The mystery shelf: names of in-stock products (stock_quantity > 0) that have never been bought in bulk — no order line for them with quantity 4 or more (NOT EXISTS).',
+          'Mystery shelf: stock wale products (stock_quantity > 0) ke naam jo kabhi bulk me nahi kharide gaye — unki koi bhi order line quantity 4 ya usse zyada nahi (NOT EXISTS).',
         ],
-        sol: 'SELECT name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id) AND stock_quantity > 0;',
+        sol: 'SELECT name FROM products p WHERE p.stock_quantity > 0 AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id AND oi.quantity >= 4);',
         hints: [
-          ['NOT EXISTS for never-sold; AND for the stock condition.', 'Never-sold ke liye NOT EXISTS; stock condition ke liye AND.'],
-          ['SELECT name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id) AND stock_quantity > 0;', 'SELECT name FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id) AND stock_quantity > 0;'],
-          ['A couple of in-stock products have never sold.', 'Chand stock wale products kabhi nahi bike.'],
+          ['The bulk condition goes INSIDE the NOT EXISTS; the stock condition stays outside.', 'Bulk condition NOT EXISTS ke ANDAR jaati hai; stock condition bahar rehti hai.'],
+          ['SELECT name FROM products p WHERE p.stock_quantity > 0 AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id AND oi.quantity >= 4);', 'SELECT name FROM products p WHERE p.stock_quantity > 0 AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id AND oi.quantity >= 4);'],
+          ['Sixteen in-stock products have never seen a bulk purchase.', 'Solah stock wale products kabhi bulk purchase nahi dekhe.'],
         ],
       }),
       task({

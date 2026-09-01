@@ -2,7 +2,7 @@
 
 // Modules 16-18: NULL Handling · ORDER BY Basics · ORDER BY Multiple Columns
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -377,13 +377,13 @@ export const modules: Module[] = [
         'SELECT name, age FROM students ORDER BY age DESC, name LIMIT 3;',
         ['What are the first three rows?', 'Pehli teen rows kya hain?'],
         [
-          { label: 'A', result: { columns: ['name', 'age'], rows: [['Malvika Singh', 21], ['Mohit Singh', 21], ['Divya Mehta', 20]] } },
+          { label: 'A', result: { columns: ['name', 'age'], rows: [['Aisha Chopra', 21], ['Malvika Singh', 21], ['Mohit Singh', 21]] } },
           { label: 'B', result: { columns: ['name', 'age'], rows: [['Abhinav Bansal', 18], ['Amit Chopra', 18], ['Kajal Sharma', 18]] } },
           { label: 'C', result: { columns: ['name', 'age'], rows: [['Malvika Singh', 21]] } },
           { label: 'D', result: { error: 'Error: near "LIMIT": syntax error' } },
         ],
         0,
-        ['Ages run 21, 21, 20… descending, with alphabetical names as tiebreak — Malvika and Mohit (21), then a 20-year-old.', 'Umar 21, 21, 20… utarti hai, naam alphabetical tiebreak — Malvika aur Mohit (21), phir koi 20 saal ka.']
+        ['Three students share the top age of 21; alphabetical order names them Aisha, Malvika and Mohit.', 'Teen students sabse badi umar 21 share karte hain; alphabetical order me Aisha, Malvika aur Mohit.']
       ),
       buildQ(
         ['Build: teachers listed from lowest to highest salary', 'Banao: teachers sabse kam se sabse zyada salary tak'],

@@ -78,6 +78,27 @@ export type ExecOutcome = ExecOk | ExecFail;
 const MUTATION_RE =
   /^\s*(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE|BEGIN|COMMIT|ROLLBACK|VACUUM|ATTACH|DETACH|PRAGMA)\b/i;
 
+/** Recover columns for zero-row SELECTs / PRAGMAs (sql.js exec omits them). */
+function tryPrepare(db: SqlJsDatabase, query: string): QueryResult | null {
+  const noTrailing = query.trim().replace(/;+\s*$/, '');
+  if (!noTrailing || /;/.test(noTrailing)) return null; // single statements only
+  let stmt: any = null;
+  try {
+    stmt = db.prepare(query);
+    const columns = (stmt.getColumnNames?.() ?? []) as string[];
+    if (!columns.length) return null;
+    const rows: Cell[][] = [];
+    while (stmt.step()) {
+      rows.push((stmt.get() as unknown[]).map(toCell));
+    }
+    return { columns, rows };
+  } catch {
+    return null;
+  } finally {
+    try { stmt?.free?.(); } catch { /* noop */ }
+  }
+}
+
 export function exec(db: SqlJsDatabase, query: string): ExecOutcome {
   const t0 = performance.now();
   try {
@@ -93,10 +114,119 @@ export function exec(db: SqlJsDatabase, query: string): ExecOutcome {
         result: { columns: [...last.columns], rows: last.values.map((r) => r.map(toCell)) },
       };
     }
+    if (stmts.length === 0) {
+      const prepared = tryPrepare(db, query);
+      if (prepared) return { ok: true, mutated, elapsedMs, result: prepared };
+    }
     return { ok: true, mutated, elapsedMs, result: null };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e), elapsedMs: performance.now() - t0 };
   }
+}
+
+/**
+ * Split a SQL script into statements safely: respects string literals,
+ * comments, parentheses, and BEGIN…END / CASE…END bodies (triggers).
+ */
+export function splitSql(script: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inStr = false;
+  let strCh = '';
+  let blockDepth = 0;   // BEGIN/CASE … END
+  let parenDepth = 0;
+  let i = 0;
+  const n = script.length;
+  const isIdentChar = (c: string) => /[A-Za-z0-9_]/.test(c);
+  while (i < n) {
+    const ch = script[i]!;
+    const next = script[i + 1];
+    // comments
+    if (!inStr && ch === '-' && next === '-') {
+      const end = script.indexOf('\n', i);
+      const stop = end === -1 ? n : end;
+      cur += script.slice(i, stop);
+      i = stop;
+      continue;
+    }
+    if (!inStr && ch === '/' && next === '*') {
+      const end = script.indexOf('*/', i + 2);
+      const stop = end === -1 ? n : end + 2;
+      cur += script.slice(i, stop);
+      i = stop;
+      continue;
+    }
+    if (inStr) {
+      cur += ch;
+      if (ch === strCh) inStr = false;
+      i++;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      inStr = true;
+      strCh = ch;
+      cur += ch;
+      i++;
+      continue;
+    }
+    if (/[A-Za-z]/.test(ch)) {
+      let j = i;
+      while (j < n && isIdentChar(script[j]!)) j++;
+      const word = script.slice(i, j).toUpperCase();
+      if (word === 'BEGIN' || word === 'CASE') blockDepth++;
+      else if (word === 'END') blockDepth = Math.max(0, blockDepth - 1);
+      cur += script.slice(i, j);
+      i = j;
+      continue;
+    }
+    if (ch === '(') parenDepth++;
+    if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+    if (ch === ';' && blockDepth === 0 && parenDepth === 0) {
+      if (cur.trim()) out.push(cur.trim());
+      cur = '';
+      i++;
+      continue;
+    }
+    cur += ch;
+    i++;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+export interface ScriptResult {
+  /** results of the LAST statement that produced a result set */
+  lastResult: QueryResult | null;
+  /** the last statement executed (text) */
+  lastStatement: string;
+  /** per-statement errors (expected-failure scripts may have some) */
+  errors: { statement: string; error: string }[];
+  /** true if any statement errored */
+  hadErrors: boolean;
+  elapsedMs: number;
+  mutated: boolean;
+}
+
+/** Run a multi-statement script, continuing past errors (for DDL practice). */
+export function execScript(db: SqlJsDatabase, script: string): ScriptResult {
+  const t0 = performance.now();
+  const statements = splitSql(script);
+  const errors: { statement: string; error: string }[] = [];
+  let lastResult: QueryResult | null = null;
+  let lastStatement = '';
+  let mutated = false;
+  for (const st of statements) {
+    const out = exec(db, st);
+    if (out.ok) {
+      mutated = mutated || out.mutated;
+      if (out.result) lastResult = out.result;
+      lastStatement = st;
+    } else {
+      errors.push({ statement: st, error: out.error });
+      lastStatement = st;
+    }
+  }
+  return { lastResult, lastStatement, errors, hadErrors: errors.length > 0, elapsedMs: performance.now() - t0, mutated };
 }
 
 function toCell(v: unknown): Cell {
@@ -238,38 +368,58 @@ export class DbContext {
 
   /**
    * Validate flow (spec §9): run user query on a clone, optionally run verify
-   * query, without ever mutating the live task DB.
+   * query, without ever mutating the live task DB. Statement-wise execution
+   * tolerates expected errors (FK rejections, RAISE(ABORT) demos) for
+   * verify-based (DDL) tasks.
    */
-  async runUserAndVerify(userQuery: string, verifyQuery?: string): Promise<{ exec: ExecOutcome; verify: ExecOutcome | null }> {
+  async runUserAndVerify(userQuery: string, verifyQuery?: string): Promise<{ exec: ExecOutcome; script: ScriptResult; verify: QueryResult | null; verifyError: string | null }> {
     const SQL = await getSqlJs();
     const db = await this.ensure();
     const clone = cloneDb(db, SQL);
     try {
-      const out = exec(clone, userQuery);
-      let verify: ExecOutcome | null = null;
-      if (out.ok && verifyQuery) {
-        verify = exec(clone, verifyQuery);
+      const statements = splitSql(userQuery);
+      const single = statements.length === 1;
+      if (single && !verifyQuery) {
+        // fast path: plain query execution with full error surfacing
+        const out = exec(clone, userQuery);
+        return { exec: out, script: { lastResult: out.ok ? out.result : null, lastStatement: userQuery, errors: out.ok ? [] : [{ statement: userQuery, error: out.error }], hadErrors: !out.ok, elapsedMs: out.elapsedMs, mutated: out.ok ? out.mutated : false }, verify: null, verifyError: null };
       }
-      return { exec: out, verify };
+      const script = execScript(clone, userQuery);
+      let verify: QueryResult | null = null;
+      let verifyError: string | null = null;
+      if (verifyQuery) {
+        const v = exec(clone, verifyQuery);
+        if (v.ok) verify = v.result;
+        else verifyError = v.error;
+      }
+      return {
+        exec: script.hadErrors
+          ? { ok: false, error: script.errors[script.errors.length - 1]!.error, elapsedMs: script.elapsedMs }
+          : { ok: true, mutated: script.mutated, elapsedMs: script.elapsedMs, result: script.lastResult },
+        script,
+        verify,
+        verifyError,
+      };
     } finally {
       clone.close();
     }
   }
 
   /**
-   * Reference result: clone → apply solution → (run verifyQuery or solution).
+   * Reference result: clone → apply solution (statement-wise, expected errors
+   * tolerated) → run verifyQuery (or return the solution's own result set).
    */
   async referenceResult(solution: string, verifyQuery?: string): Promise<QueryResult | null> {
     const SQL = await getSqlJs();
     const db = await this.ensure();
     const clone = cloneDb(db, SQL);
     try {
-      const sol = exec(clone, solution);
-      if (!sol.ok) return null;
-      const finalQuery = verifyQuery ?? solution;
-      const fin = exec(clone, finalQuery);
-      if (!fin.ok) return null;
-      return fin.result;
+      const script = execScript(clone, solution);
+      if (verifyQuery) {
+        const fin = exec(clone, verifyQuery);
+        return fin.ok ? fin.result : null;
+      }
+      return script.lastResult;
     } finally {
       clone.close();
     }

@@ -2,7 +2,7 @@
 
 // Modules 13-15: BETWEEN · IN Operator · LIKE & Wildcards
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -140,13 +140,13 @@ export const modules: Module[] = [
         'SELECT COUNT(*) FROM students WHERE age NOT BETWEEN 17 AND 19;',
         ['How many students are outside the 17-19 core band?', '17-19 core band ke bahar kitne students hain?'],
         [
-          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[9]] } },
+          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[24]] } },
           { label: 'B', result: { columns: ['COUNT(*)'], rows: [[41]] } },
           { label: 'C', result: { columns: ['COUNT(*)'], rows: [[0]] } },
           { label: 'D', result: { error: 'Error: near "NOT": syntax error' } },
         ],
         0,
-        ['41 students are 17-19; the 9 others (16-year-olds and 20/21-year-olds) remain.', '41 students 17-19 hain; baqi 9 (16 saal aur 20/21 saal wale) reh jaate hain.']
+        ['26 students are 17-19; the 24 others (16-year-olds and 20/21-year-olds) remain.', '26 students 17-19 hain; baqi 24 (16 saal aur 20/21 saal wale) reh jaate hain.']
       ),
       buildQ(
         ['Build: teachers with 5 to 15 years of experience', 'Banao: 5 se 15 saal experience wale teachers'],
@@ -213,7 +213,7 @@ export const modules: Module[] = [
         hints: [
           ['NOT BETWEEN keeps the complement band.', 'NOT BETWEEN complement band rakhta hai.'],
           ['SELECT name, age FROM students WHERE age NOT BETWEEN 17 AND 19;', 'SELECT name, age FROM students WHERE age NOT BETWEEN 17 AND 19;'],
-          ['Nine students (age 16, 20 or 21) appear.', 'Nau students (age 16, 20 ya 21) dikhte hain.'],
+          ['Twenty-four students (age 16, 20 or 21) appear.', 'Chaubis students (age 16, 20 ya 21) dikhte hain.'],
         ],
       }),
       task({

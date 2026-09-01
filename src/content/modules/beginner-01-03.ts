@@ -2,7 +2,7 @@
 
 // Modules 01-03: What is Database & SQL · Database vs Spreadsheet · SQL Syntax Basics
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [

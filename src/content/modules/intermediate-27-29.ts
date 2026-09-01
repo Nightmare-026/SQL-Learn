@@ -2,7 +2,7 @@
 
 // Modules 27-29: HAVING · Subqueries Introduction · WHERE Subqueries
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -136,7 +136,7 @@ export const modules: Module[] = [
         ['The condition tests an aggregate over groups, so it must be HAVING after GROUP BY category.', 'Condition groups par aggregate test karti hai, to GROUP BY category ke baad HAVING hi hoga.']
       ),
       outputQ(
-        'SELECT city, COUNT(*) AS customers FROM customers GROUP BY city HAVING COUNT(*) > 6 ORDER BY customers DESC;',
+        'SELECT city, COUNT(*) AS customers FROM customers GROUP BY city HAVING COUNT(*) > 8 ORDER BY customers DESC;',
         ['Which cities survive the filter?', 'Kaunsi cities filter paar karti hain?'],
         [
           { label: 'A', result: { columns: ['city', 'customers'], rows: [['Jaipur', 13]] } },
@@ -144,8 +144,8 @@ export const modules: Module[] = [
           { label: 'C', result: { columns: ['city', 'customers'], rows: [['Jaipur', 13], ['Kochi', 8], ['Kolkata', 8], ['Bangalore', 7], ['Ahmedabad', 7]] } },
           { label: 'D', result: { error: 'Error: misuse of aggregate: COUNT()' } },
         ],
-        1,
-        ['Only three cities hold more than 6 customers: Jaipur 13, Kochi 8, Kolkata 8.', 'Sirf teen cities me 6 se zyada customers hain: Jaipur 13, Kochi 8, Kolkata 8.']
+        0,
+        ['Only Jaipur clears the > 8 bar (13 customers); Kochi and Kolkata sit at exactly 8 — excluded.', 'Sirf Jaipur > 8 ki lakeer paar karta hai (13 customers); Kochi aur Kolkata exactly 8 par — bahar.']
       ),
       buildQ(
         ['Build: product categories stocking 12+ products', 'Banao: 12+ products wali categories'],
@@ -170,7 +170,7 @@ export const modules: Module[] = [
         hints: [
           ['The condition mentions COUNT ⇒ HAVING.', 'Condition me COUNT ka zikr hai ⇒ HAVING.'],
           ['SELECT city, COUNT(*) FROM customers GROUP BY city HAVING COUNT(*) > 5;', 'SELECT city, COUNT(*) FROM customers GROUP BY city HAVING COUNT(*) > 5;'],
-          ['Three cities qualify.', 'Teen cities qualify karti hain.'],
+          ['Ten cities qualify.', 'Das cities qualify karti hain.'],
         ],
       }),
       task({
@@ -363,13 +363,13 @@ export const modules: Module[] = [
         'SELECT name, price FROM products WHERE price > (SELECT AVG(price) FROM products) ORDER BY price DESC LIMIT 3;',
         ['The three priciest above-average products:', 'Average se upar teen sabse mehge products:'],
         [
-          { label: 'A', result: { columns: ['name', 'price'], rows: [['Titan Edge 96', 48914], ['Pulse Max 55 Gen3', 47883], ['Gamma Nova 48 Gen4', 47700]] } },
+          { label: 'A', result: { columns: ['name', 'price'], rows: [['Titan Pro 21', 48914], ['Titan Elite 90', 48898], ['Titan Zen 4', 48260]] } },
           { label: 'B', result: { columns: ['name', 'price'], rows: [['Alpha Lite 7', 118]] } },
           { label: 'C', result: { error: 'Error: row value misused' } },
           { label: 'D', result: { columns: ['name', 'price'], rows: [] } },
         ],
         0,
-        ['Sorting the above-average set descending and capping at three yields the premium trio.', 'Above-average set ko utarte sort karke teen par rokne se premium trio milti hai.']
+        ['Sorting the above-average set by price descending and capping at three yields the premium trio.', 'Above-average set ko price se utarte sort karke teen par rokne se premium trio milti hai.']
       ),
       buildQ(
         ['Build: customers above the average order count is hard — instead build products priced above the average (names only)', 'Banao: average order count se upar customers mushkil hai — uski jagah average price se upar products banao (sirf naam)'],
@@ -592,13 +592,13 @@ export const modules: Module[] = [
         "SELECT COUNT(*) FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE status = 'delivered');",
         ['How many customers have received a delivered order?', 'Kitne customers ko delivered order mila hai?'],
         [
-          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[95]] } },
+          { label: 'A', result: { columns: ['COUNT(*)'], rows: [[66]] } },
           { label: 'B', result: { columns: ['COUNT(*)'], rows: [[98]] } },
           { label: 'C', result: { columns: ['COUNT(*)'], rows: [[100]] } },
           { label: 'D', result: { error: 'Error: row value misused' } },
         ],
         0,
-        ['98 delivered orders trace back to 95 distinct customers.', '98 delivered orders 95 alag customers tak jaate hain.']
+        ['98 delivered orders trace back to 66 distinct customers.', '98 delivered orders 66 alag customers tak jaate hain.']
       ),
       buildQ(
         ['Build: names of customers having delivered orders', 'Banao: delivered orders wale customers ke naam'],
@@ -639,7 +639,7 @@ export const modules: Module[] = [
         hints: [
           ['Same pattern, delivered set.', 'Wahi pattern, delivered set.'],
           ["SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE status = 'delivered');", "SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE status = 'delivered');"],
-          ['95 customers appear.', '95 customers dikhte hain.'],
+          ['66 customers appear.', '66 customers dikhte hain.'],
         ],
       }),
       task({

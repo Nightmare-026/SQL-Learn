@@ -2,7 +2,7 @@
 
 // Modules 21-23: Aggregate Functions Intro · COUNT Deep Dive · SUM & AVG
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [
@@ -140,13 +140,13 @@ export const modules: Module[] = [
         'SELECT COUNT(*), SUM(amount) FROM payments;',
         ['Volume and total of all payments — what values?', 'Saari payments ka volume aur total — kaunsi values?'],
         [
-          { label: 'A', result: { columns: ['COUNT(*)', 'SUM(amount)'], rows: [[500, 38969045.0]] } },
+          { label: 'A', result: { columns: ['COUNT(*)', 'SUM(amount)'], rows: [[500, 37796654.6]] } },
           { label: 'B', result: { columns: ['COUNT(*)', 'SUM(amount)'], rows: [[100, 38969045.0]] } },
           { label: 'C', result: { columns: ['COUNT(*)', 'SUM(amount)'], rows: [[500, 0]] } },
           { label: 'D', result: { error: 'Error: misuse of aggregate' } },
         ],
         0,
-        ['500 payments; the total revenue lands near 39 million (≈ 38,969,045).', '500 payments; total revenue lagbhag 39 million (≈ 38,969,045).']
+        ['500 payments; the total revenue lands near 38 million (≈ 37,796,654.6).', '500 payments; total revenue lagbhag 38 million (≈ 37,796,654.6).']
       ),
       buildQ(
         ['Build: the number of products we sell', 'Banao: hum jitne products bechte hain unki ginti'],

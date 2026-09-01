@@ -1,0 +1,13 @@
+const initSqlJs = require('sql.js');
+const fs = require('fs');
+const SQL = await initSqlJs({ wasmBinary: fs.readFileSync('node_modules/sql.js/dist/sql-wasm.wasm') });
+const load = (p) => JSON.parse(fs.readFileSync(p, 'utf8').match(/export const \w+ = (".*");\n/s)[1]);
+const db = new SQL.Database();
+db.exec(load('src/content/datasets/school.ts'));
+const r = db.exec("PRAGMA foreign_key_list(enrollments)");
+console.log('exec result:', JSON.stringify(r));
+const stmt = db.prepare("PRAGMA foreign_key_list(enrollments)");
+console.log('cols:', JSON.stringify(stmt.getColumnNames()));
+const rows = [];
+while (stmt.step()) rows.push(stmt.getAsArray());
+console.log('rows:', JSON.stringify(rows));

@@ -48,7 +48,7 @@ export interface TaskSpec {
   d: TaskDifficulty;
   desc: L;
   sol: string;
-  verify?: string;
+  verifyQuery?: string;
   cols?: string[];
   hints: [L, L, L];
   rules?: Partial<PracticeTask['validation']>;
@@ -59,7 +59,7 @@ export const task = (spec: TaskSpec): PracticeTask => ({
   difficulty: spec.d,
   description: loc(spec.desc),
   solution: spec.sol,
-  verifyQuery: spec.verify,
+  verifyQuery: spec.verifyQuery,
   expectedColumns: spec.cols,
   hints: h3(spec.hints[0], spec.hints[1], spec.hints[2]),
   validation: spec.rules ?? {},
@@ -100,7 +100,7 @@ export interface ModuleSpec {
   mistakes: CommonMistake[];
   summary: L[];
   quiz: QuizQuestion[];
-  tasks: TaskSpec[];
+  tasks: PracticeTask[];
   diagram: DiagramKind;
 }
 
@@ -134,7 +134,7 @@ export function defineModule(spec: ModuleSpec): Module {
     commonMistakes: spec.mistakes,
     summary: locList(spec.summary),
     quiz: spec.quiz,
-    tasks: spec.tasks.map((t, i) => ({ ...task(t), id: `task-${i + 1}` })),
+    tasks: spec.tasks.map((t, i) => ({ ...t, id: `task-${i + 1}` })),
     diagram: spec.diagram,
   };
 }

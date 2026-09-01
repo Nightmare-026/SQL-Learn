@@ -2,7 +2,7 @@
 
 // Modules 04-06: Data Types Overview · SELECT Fundamentals · SELECT Multiple Columns
 
-import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from '../builder';
+import { defineModule, section, step, example, mistake, mcq, outputQ, buildQ, blanksQ, task } from './builder';
 import type { Module } from '@/types/content';
 
 export const modules: Module[] = [

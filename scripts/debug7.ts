@@ -1,0 +1,10 @@
+const initSqlJs = require('sql.js');
+const fs = require('fs');
+const SQL = await initSqlJs({ wasmBinary: fs.readFileSync('node_modules/sql.js/dist/sql-wasm.wasm') });
+const db = new SQL.Database();
+db.exec('CREATE TABLE t (a INTEGER); INSERT INTO t VALUES (5);');
+const stmt = db.prepare('SELECT * FROM t');
+console.log('methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(stmt)));
+stmt.step();
+console.log('get():', JSON.stringify(stmt.get()));
+stmt.free();

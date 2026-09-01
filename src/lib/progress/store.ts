@@ -2,8 +2,10 @@
 
 // ============ Progress store: Zustand + localStorage (spec §18) ============
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+
 import { freshProgress, emptyModuleProgress } from '@/types/progress';
 import type { ModuleProgress, ProgressState, ProgressStats } from '@/types/progress';
 import type { Lang } from '@/types/content';
@@ -212,31 +214,34 @@ export function useModuleStatus(moduleId: string): ModuleProgress | undefined {
 }
 
 export function useProgressSummary() {
-  return useProgressStore((s) => {
-    const completed = Object.values(s.modules).filter((m) => m.status === 'completed');
+  const modules = useProgressStore((s) => s.modules);
+  const projects = useProgressStore((s) => s.projects);
+  const stats = useProgressStore((s) => s.stats);
+  return useMemo(() => {
     const byLevel = { beginner: 0, intermediate: 0, advanced: 0 } as Record<string, number>;
-    for (const id of Object.keys(s.modules)) {
-      const number = Number(id.replace('module-', ''));
-      const level = levelOfModule(number);
-      if (s.modules[id].status === 'completed') byLevel[level]++;
+    let modulesCompleted = 0;
+    for (const [id, mp] of Object.entries(modules)) {
+      if (mp.status !== 'completed') continue;
+      modulesCompleted++;
+      const n = Number(id.replace('module-', ''));
+      const level = levelOfModule(n);
+      byLevel[level] = (byLevel[level] ?? 0) + 1;
     }
-    const tasksCompleted = Object.values(s.modules).reduce(
-      (sum, m) => sum + m.tasksCompleted.length, 0
-    );
-    const projectsCompleted = Object.values(s.projects).filter((p) => p.status === 'completed').length;
+    const tasksCompleted = Object.values(modules).reduce((sum, m) => sum + m.tasksCompleted.length, 0);
+    const projectsCompleted = Object.values(projects).filter((p) => p.status === 'completed').length;
     return {
-      overallPercent: Math.round((completed.length / TOTAL_MODULES) * 100),
+      overallPercent: Math.round((modulesCompleted / TOTAL_MODULES) * 100),
       levelProgress: {
         beginner: { completed: byLevel.beginner, total: 20 },
         intermediate: { completed: byLevel.intermediate, total: 20 },
         advanced: { completed: byLevel.advanced, total: 20 },
       },
-      modulesCompleted: completed.length,
+      modulesCompleted,
       tasksCompleted,
       projectsCompleted,
-      queriesRun: s.stats.totalQueriesRun,
+      queriesRun: stats.totalQueriesRun,
     };
-  });
+  }, [modules, projects, stats]);
 }
 
 export function useUnlocked(moduleNumber: number): boolean {
