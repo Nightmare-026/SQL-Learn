@@ -1,0 +1,2002 @@
+     1→# 📘 SQL Learning Platform — Complete Architecture & Development Plan
+     2→
+     3→> **Document Type:** Technical Architecture & Requirements Specification  
+     4→> **Version:** 1.0 (Final)  
+     5→> **Status:** Requirements Locked — Approved for Development  
+     6→> **Total Modules:** 60 | **Total Decisions:** 27 | **Est. Effort:** 3,200+ hours
+     7→
+     8→---
+     9→
+    10→## Table of Contents
+    11→
+    12→1. [Executive Summary](#1-executive-summary)
+    13→2. [Locked Requirements (27 Decisions)](#2-locked-requirements)
+    14→3. [Technology Stack](#3-technology-stack)
+    15→4. [System Architecture](#4-system-architecture)
+    16→5. [Database Design](#5-database-design)
+    17→6. [Curriculum Structure (60 Modules)](#6-curriculum-structure)
+    18→7. [Module Content Template](#7-module-content-template)
+    19→8. [Practice Console Architecture](#8-practice-console-architecture)
+    20→9. [Query Validation Engine](#9-query-validation-engine)
+    21→10. [Hint System](#10-hint-system)
+    22→11. [Error Feedback System](#11-error-feedback-system)
+    23→12. [Sandbox Mode](#12-sandbox-mode)
+    24→13. [Quiz System](#13-quiz-system)
+    25→14. [Projects & Capstone](#14-projects--capstone)
+    26→15. [UI/UX Design System](#15-uiux-design-system)
+    27→16. [Navigation & Page Structure](#16-navigation--page-structure)
+    28→17. [Language System (EN/HI)](#17-language-system)
+    29→18. [Progress Tracking System](#18-progress-tracking-system)
+    30→19. [Search & Filter System](#19-search--filter-system)
+    31→20. [Component Architecture](#20-component-architecture)
+    32→21. [File & Folder Structure](#21-file--folder-structure)
+    33→22. [TypeScript Type Definitions](#22-typescript-type-definitions)
+    34→23. [Content Creation Guidelines](#23-content-creation-guidelines)
+    35→24. [Animated Tutorial System](#24-animated-tutorial-system)
+    36→25. [Mobile Support Strategy](#25-mobile-support-strategy)
+    37→26. [Development Roadmap](#26-development-roadmap)
+    38→27. [Testing Strategy](#27-testing-strategy)
+    39→28. [Deployment & Hosting](#28-deployment--hosting)
+    40→29. [Performance Requirements](#29-performance-requirements)
+    41→30. [Success Metrics](#30-success-metrics)
+    42→31. [Final Checklist](#31-final-checklist)
+    43→32. [Appendix: Glossary](#32-appendix-glossary)
+    44→
+    45→---
+    46→
+    47→## 1. Executive Summary
+    48→
+    49→### 1.1 Vision
+    50→
+    51→Build a **complete, free, browser-based SQL learning platform** that takes users from zero knowledge to industry-level SQL expertise through 60 structured modules, interactive practice console, and real-world projects — all without requiring signup, servers, or payment.
+    52→
+    53→### 1.2 Problem Statement
+    54→
+    55→| Current Pain Point | Our Solution |
+    56→|---|---|
+    57→| SQL tutorials are theory-heavy, practice-light | 300 interactive practice tasks with live validation |
+    58→| Practice environments require setup (MySQL/PostgreSQL install) | Browser-based SQLite (sql.js) — zero setup |
+    59→| Content jumps from basic to advanced without progression | 60 micro-modules with gradual difficulty |
+    60→| No feedback on wrong queries | Friendly error explanations + SQLite raw errors |
+    61→| English-only content excludes Hindi speakers | Full dual-language toggle (EN/HI) |
+    62→| Progress lost when switching devices | localStorage + backup/export system |
+    63→
+    64→### 1.3 Core Value Propositions
+    65→
+    66→| # | Value | Implementation |
+    67→|---|---|---|
+    68→| 1 | **Zero Friction Start** | No signup, no server, no payment — instant learning |
+    69→| 2 | **Complete Journey** | 60 modules: Beginner (20) → Intermediate (20) → Advanced (20) |
+    70→| 3 | **Real Practice** | 3-panel IDE console with live SQLite execution |
+    71→| 4 | **Smart Validation** | Result-matching engine (not exact string match) |
+    72→| 5 | **Progressive Learning** | 5 tasks per module (Very Easy → Very Hard) |
+    73→| 6 | **Dual Language** | Full English + Hinglish content toggle |
+    74→| 7 | **100% Free & Offline** | Client-side only, works without internet after load |
+    75→| 8 | **Industry-Ready** | 10 projects including capstone BI system |
+    76→
+    77→### 1.4 Target Users
+    78→
+    79→| Persona | Description | Primary Need |
+    80→|---|---|---|
+    81→| **Complete Beginner** | Never touched SQL, possibly student or career switcher | Gentle, structured introduction |
+    82→| **College Student** | Learning DBMS in curriculum, needs practice | Exam-oriented clear explanations |
+    83→| **Job Seeker** | Preparing for data analyst/developer interviews | Practical query skills, common patterns |
+    84→| **Working Developer** | Knows programming, weak in SQL | Quick reference, advanced topics |
+    85→
+    86→### 1.5 Success Definition
+    87→
+    88→- User completes Beginner level without external help
+    89→- User can write JOIN, GROUP BY, subquery queries confidently
+    90→- User can solve real business problems with SQL after Capstone
+    91→- Platform feels professional (Coursera-level UI quality)
+    92→
+    93→---
+    94→
+    95→## 2. Locked Requirements
+    96→
+    97→All 27 requirements finalized through structured Q&A. No changes without version update.
+    98→
+    99→| # | Category | Decision | Key Details |
+   100→|---|----------|----------|-------------|
+   101→| 1 | Target Audience | All Levels | 3 difficulty tracks, complete journey |
+   102→| 2 | Module Structure | Complete | Theory + Animated Tutorial + Quiz + Console + Projects |
+   103→| 3 | Validation System | Hybrid | Result-match + Progressive tasks + Hints + Sandbox |
+   104→| 4 | Database Engine | SQLite (Browser) | sql.js WASM, offline capable, no server |
+   105→| 5 | Progress Saving | localStorage | No accounts, backup code export available |
+   106→| 6 | Theme | Light Mode | Educational, clean, Coursera-inspired |
+   107→| 7 | Language | Dual Toggle (EN/HI) | All content in both English & Hinglish |
+   108→| 8 | Tech Stack | React + TypeScript + Tailwind | shadcn/ui, Framer Motion, professional grade |
+   109→| 9 | Gamification | None | No XP, badges, streaks — professional tone |
+   110→| 10 | Module Organization | Level-Based Groups | Beginner → Intermediate → Advanced, linear within |
+   111→| 11 | Total Modules | 60 (20/20/20) | Micro-modules, every concept dedicated |
+   112→| 12 | Dataset | School + E-Commerce | School for Beginner, E-Com for Inter/Adv |
+   113→| 13 | Practice Tasks | 5 per module | Very Easy → Easy → Medium → Hard → Very Hard |
+   114→| 14 | Video Content | Animated Text Tutorials | Code typing animations, no recorded videos |
+   115→| 15 | Quiz Format | All 4 Types | MCQ + Output Prediction + Query Building + Fill Blanks |
+   116→| 16 | Projects | 10 Total | 6 Mini + 3 Level finals + 1 Capstone |
+   117→| 17 | Console Layout | 3-Panel IDE | Schema (left) + Editor (center) + Results (right) |
+   118→| 18 | Mobile Support | Desktop-First | Mobile = theory/quiz only, console view-only |
+   119→| 19 | SQL Editor | Basic | Syntax highlighting only, no autocomplete |
+   120→| 20 | Hint System | 3-Level Progressive | Concept → Structure → Partial Solution |
+   121→| 21 | Error Feedback | Friendly + Raw | Simple explanation + SQLite technical error |
+   122→| 22 | Sandbox Mode | Full DDL/DML | CREATE/INSERT/UPDATE/DELETE + Reset button |
+   123→| 23 | Completion Criteria | Both Required | 3/5 tasks AND 70% quiz score |
+   124→| 24 | Navigation | Top Bar + Dropdown | Compact, maximum content space |
+   125→| 25 | Homepage | Landing Page | Hero + Features + CTA + Stats |
+   126→| 26 | Search | Search + Filters | Keyword + Level filter + Status filter |
+   127→| 27 | Development | All-at-Once | Complete product, 6-month build, perfect launch |
+   128→
+   129→---
+   130→
+   131→## 3. Technology Stack
+   132→
+   133→### 3.1 Stack Overview
+   134→
+   135→```
+   136→┌─────────────────────────────────────────────────────┐
+   137→│                  TECHNOLOGY STACK                    │
+   138→├─────────────────────────────────────────────────────┤
+   139→│                                                     │
+   140→│  UI LAYER                                           │
+   141→│  ├── React 18.x (Component architecture)            │
+   142→│  ├── TypeScript 5.x (Type safety, DX)               │
+   143→│  ├── Tailwind CSS 3.x (Utility-first styling)       │
+   144→│  ├── shadcn/ui (Pre-built components)               │
+   145→│  ├── Radix UI (Accessible primitives)               │
+   146→│  ├── Framer Motion 10.x (Animations)                │
+   147→│  └── Lucide React (Icon library)                    │
+   148→│                                                     │
+   149→│  STATE MANAGEMENT                                   │
+   150→│  ├── Zustand 4.x (Global state store)               │
+   151→│  └── localStorage (Progress persistence)            │
+   152→│                                                     │
+   153→│  DATABASE LAYER                                     │
+   154→│  ├── sql.js 1.x (SQLite compiled to WASM)           │
+   155→│  ├── Custom Query Runner (Execution wrapper)        │
+   156→│  └── Result Comparator (Validation engine)          │
+   157→│                                                     │
+   158→│  CONTENT LAYER                                      │
+   159→│  ├── JSON (Module definitions, tasks, quizzes)      │
+   160→│  ├── Markdown/MDX (Theory content)                  │
+   161→│  └── Custom Animation Engine (Tutorials)            │
+   162→│                                                     │
+   163→│  BUILD & DEV TOOLS                                  │
+   164→│  ├── Vite 5.x (Build tool, fast HMR)                │
+   165→│  ├── Vitest 1.x (Unit testing)                      │
+   166→│  ├── ESLint + Prettier (Code quality)               │
+   167→│  └── TypeScript Strict Mode                         │
+   168→│                                                     │
+   169→└─────────────────────────────────────────────────────┘
+   170→```
+   171→
+   172→### 3.2 Why These Choices
+   173→
+   174→| Technology | Reason | Alternative Rejected |
+   175→|---|---|---|
+   176→| **React 18** | Industry standard, huge ecosystem, shadcn/ui compatibility | Vue (smaller ecosystem for this use) |
+   177→| **TypeScript** | Type safety for 60-module content structures, catches content bugs | JavaScript (runtime errors in content) |
+   178→| **Tailwind CSS** | Rapid UI development, consistent design tokens, small bundle | CSS Modules (slower development) |
+   179→| **shadcn/ui** | Beautiful accessible components, copy-paste ownership, Radix-based | Material UI (heavier, opinionated) |
+   180→| **sql.js** | SQLite in browser, WASM = fast, no server needed | Server-based MySQL (hosting cost, complexity) |
+   181→| **Zustand** | Lightweight, simple API, perfect for this scale | Redux (overkill), Context (performance) |
+   182→| **Vite** | Fastest build tool, excellent DX | Webpack (slower, more config) |
+   183→
+   184→### 3.3 Dependencies (package.json)
+   185→
+   186→```json
+   187→{
+   188→  "name": "sql-learning-platform",
+   189→  "version": "1.0.0",
+   190→  "type": "module",
+   191→  "scripts": {
+   192→    "dev": "vite",
+   193→    "build": "tsc && vite build",
+   194→    "preview": "vite preview",
+   195→    "test": "vitest",
+   196→    "lint": "eslint . --ext ts,tsx",
+   197→    "format": "prettier --write ."
+   198→  },
+   199→  "dependencies": {
+   200→    "react": "^18.2.0",
+   201→    "react-dom": "^18.2.0",
+   202→    "sql.js": "^1.8.0",
+   203→    "zustand": "^4.4.0",
+   204→    "framer-motion": "^10.16.0",
+   205→    "lucide-react": "^0.263.0",
+   206→    "@radix-ui/react-dropdown-menu": "^2.0.0",
+   207→    "@radix-ui/react-dialog": "^1.0.0",
+   208→    "@radix-ui/react-tabs": "^1.0.0",
+   209→    "@radix-ui/react-tooltip": "^1.0.0",
+   210→    "@radix-ui/react-progress": "^1.0.0",
+   211→    "class-variance-authority": "^0.7.0",
+   212→    "clsx": "^2.0.0",
+   213→    "tailwind-merge": "^1.14.0"
+   214→  },
+   215→  "devDependencies": {
+   216→    "@types/react": "^18.2.0",
+   217→    "@types/react-dom": "^18.2.0",
+   218→    "@types/sql.js": "^1.4.0",
+   219→    "@vitejs/plugin-react": "^4.0.0",
+   220→    "typescript": "^5.1.0",
+   221→    "vite": "^4.4.0",
+   222→    "vitest": "^0.34.0",
+   223→    "@testing-library/react": "^14.0.0",
+   224→    "@testing-library/jest-dom": "^6.0.0",
+   225→    "tailwindcss": "^3.3.0",
+   226→    "autoprefixer": "^10.4.0",
+   227→    "postcss": "^8.4.0",
+   228→    "eslint": "^8.45.0",
+   229→    "@typescript-eslint/eslint-plugin": "^6.0.0",
+   230→    "prettier": "^3.0.0"
+   231→  }
+   232→}
+   233→```
+   234→
+   235→### 3.4 SQLite Feature Support (sql.js)
+   236→
+   237→| Feature | Supported | Notes |
+   238→|---|---|---|
+   239→| SELECT, WHERE, ORDER BY, LIMIT | ✅ | Full support |
+   240→| All JOIN types (INNER, LEFT, RIGHT, FULL, CROSS, SELF) | ✅ | Full support |
+   241→| GROUP BY, HAVING | ✅ | Full support |
+   242→| Aggregate functions (COUNT, SUM, AVG, MIN, MAX) | ✅ | Full support |
+   243→| Subqueries (scalar, correlated, EXISTS) | ✅ | Full support |
+   244→| CTEs (WITH clause, including recursive) | ✅ | SQLite 3.8.3+ |
+   245→| Window Functions (ROW_NUMBER, RANK, LAG, LEAD, etc.) | ✅ | SQLite 3.25+ |
+   246→| CASE statements | ✅ | Full support |
+   247→| Views (CREATE, DROP, UPDATE) | ✅ | Full support |
+   248→| Indexes (CREATE INDEX) | ✅ | Full support |
+   249→| Transactions (BEGIN, COMMIT, ROLLBACK) | ✅ | Full support |
+   250→| Triggers | ✅ | Full support |
+   251→| String functions (UPPER, LOWER, SUBSTR, etc.) | ✅ | Full support |
+   252→| Date functions (DATE, DATETIME, strftime) | ✅ | Full support |
+   253→| **Stored Procedures** | ❌ | Not in SQLite — covered as theory-only with alternatives |
+   254→| **User Management (GRANT/REVOKE)** | ❌ | Not applicable — theory module only |
+   255→
+   256→---
+   257→
+   258→## 4. System Architecture
+   259→
+   260→### 4.1 High-Level Architecture (Client-Side Only)
+   261→
+   262→```
+   263→┌─────────────────────────────────────────────────────────────────┐
+   264→│                    BROWSER (100% Client-Side)                    │
+   265→│                                                                 │
+   266→│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐      │
+   267→│  │  React App   │   │    sql.js    │   │ localStorage  │      │
+   268→│  │  (UI Layer)  │◄─►│  (SQLite     │   │  (Progress    │      │
+   269→│  │              │   │   Engine)    │   │   Store)      │      │
+   270→│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘      │
+   271→│         │                  │                   │              │
+   272→│  ┌──────▼──────────────────▼───────────────────▼───────┐      │
+   273→│  │                 Application Core                     │      │
+   274→│  │  ┌────────────────────────────────────────────────┐ │      │
+   275→│  │  │  Module Manager                                 │ │      │
+   276→│  │  │  (Loads module content, animations, tasks)     │ │      │
+   277→│  │  └────────────────────────────────────────────────┘ │      │
+   278→│  │  ┌────────────────────────────────────────────────┐ │      │
+   279→│  │  │  Progress Tracker                               │ │      │
+   280→│  │  │  (localStorage read/write, completion logic)   │ │      │
+   281→│  │  └────────────────────────────────────────────────┘ │      │
+   282→│  │  ┌────────────────────────────────────────────────┐ │      │
+   283→│  │  │  Query Validator                               │ │      │
+   284→│  │  │  (Execute query, compare results, diff view)   │ │      │
+   285→│  │  └────────────────────────────────────────────────┘ │      │
+   286→│  │  ┌────────────────────────────────────────────────┐ │      │
+   287→│  │  │  Hint Manager                                  │ │      │
+   288→│  │  │  (3-level progressive hints, unlock logic)     │ │      │
+   289→│  │  └────────────────────────────────────────────────┘ │      │
+   290→│  │  ┌────────────────────────────────────────────────┐ │      │
+   291→│  │  │  Quiz Engine                                   │ │      │
+   292→│  │  │  (4 question types, scoring, retry logic)      │ │      │
+   293→│  │  └────────────────────────────────────────────────┘ │      │
+   294→│  │  ┌────────────────────────────────────────────────┐ │      │
+   295→│  │  │  Language System                               │ │      │
+   296→│  │  │  (EN/HI toggle, content loading)               │ │      │
+   297→│  │  └────────────────────────────────────────────────┘ │      │
+   298→│  └──────────────────────────────────────────────────────┘      │
+   299→│                                                                 │
+   300→│  ┌──────────────────────────────────────────────────────┐      │
+   301→│  │              Content Bundle (Static)                  │      │
+   302→│  │  ├── modules/beginner/ (20 JSON files)              │      │
+   303→│  │  ├── modules/intermediate/ (20 JSON files)          │      │
+   304→│  │  ├── modules/advanced/ (20 JSON files)              │      │
+   305→│  │  ├── projects/ (10 JSON files)                      │      │
+   306→│  │  ├── datasets/ (3 SQL seed files)                   │      │
+   307→│  │  └── locales/ (en.json, hi.json)                    │      │
+   308→│  └──────────────────────────────────────────────────────┘      │
+   309→│                                                                 │
+   310→│  ┌──────────────────────────────────────────────────────┐      │
+   311→│  │              sql.js WASM (~1.2 MB)                    │      │
+   312→│  │  (Loaded once, cached, all DB operations)            │      │
+   313→│  └──────────────────────────────────────────────────────┘      │
+   314→│                                                                 │
+   315→└─────────────────────────────────────────────────────────────────┘
+   316→
+   317→NO SERVER REQUIRED — Deploy as static files
+   318→```
+   319→
+   320→### 4.2 Data Flow: Query Execution
+   321→
+   322→```
+   323→USER FLOW (Practice Task):
+   324→
+   325→[1] User types query
+   326→     │
+   327→     ▼
+   328→[2] Clicks "RUN" button
+   329→     │
+   330→     ▼
+   331→[3] Query sent to sql.js engine
+   332→     │
+   333→     ├── ERROR path:
+   334→     │   ├── SQLite error captured
+   335→     │   ├── Error pattern matcher runs
+   336→     │   │   (detects common typos: FORM→FROM, etc.)
+   337→     │   └── Friendly explanation generated
+   338→     │   └── Display: Friendly message + Raw technical error
+   339→     │
+   340→     └── SUCCESS path:
+   341→         ├── Query executes
+   342→         ├── Result set extracted (rows + columns)
+   343→         │
+   344→         ├── NORMALIZATION:
+   345→         │   ├── Trim whitespace in string values
+   346→         │   ├── Round decimals to tolerance (0.01)
+   347→         │   ├── Sort rows (if no ORDER BY in expected)
+   348→         │   └── Map column names (if aliases expected)
+   349→         │
+   350→         ├── COMPARISON:
+   351→         │   ├── Column count check
+   352→         │   ├── Column names check (if required)
+   353→         │   ├── Row count check
+   354→         │   └── Cell-by-cell value comparison
+   355→         │
+   356→         └── RESULT:
+   357→             ├── MATCH → "✅ Correct!" + Next task unlock
+   358→             └── NO MATCH → "❌ Output doesn't match" +
+   359→                 Diff view (Expected vs Got) +
+   360→                 Hint suggestion
+   361→```
+   362→
+   363→### 4.3 Data Flow: Module Progression
+   364→
+   365→```
+   366→MODULE COMPLETION FLOW:
+   367→
+   368→[Module Page Load]
+   369→     │
+   370→     ▼
+   371→[User reads Theory] ──(auto-track scroll/read time)──► Mark "theory_read": true
+   372→     │
+   373→     ▼
+   374→[User attempts Practice Tasks]
+   375→     │
+   376→     ├── Task 1: Pass ✓ (stored in progress)
+   377→     ├── Task 2: Pass ✓
+   378→     ├── Task 3: Pass ✓
+   379→     ├── Task 4: Fail ✗ (retry allowed)
+   380→     └── Task 5: Not attempted
+   381→     │
+   382→     ▼
+   383→[3/5 tasks passed] ──► tasks_requirement: MET ✓
+   384→     │
+   385→     ▼
+   386→[User takes Quiz (4 questions)]
+   387→     │
+   388→     ├── Q1: MCQ → Correct
+   389→     ├── Q2: Output Prediction → Correct
+   390→     ├── Q3: Query Building → Wrong
+   391→     └── Q4: Fill Blanks → Correct
+   392→     │
+   393→     ▼
+   394→[Score: 75%] ──► 70%+ → quiz_requirement: MET ✓
+   395→     │
+   396→     ▼
+   397→[ALL REQUIREMENTS MET]
+   398→     │
+   399→     ├── Progress saved to localStorage
+   400→     ├── Module marked: COMPLETED ✓
+   401→     ├── Next module: UNLOCKED 🔓
+   402→     ├── Congratulation UI shown 🎉
+   403→     └── "Next Module" button appears
+   404→```
+   405→
+   406→---
+   407→
+   408→## 5. Database Design
+   409→
+   410→### 5.1 Dataset Progression Strategy
+   411→
+   412→| Level | Database | Complexity | Rationale |
+   413→|---|---|---|---|
+   414→| Beginner (M1-20) | School | Simple (5 tables) | Relatable context, simple columns |
+   415→| Intermediate (M21-40) | E-Commerce | Medium (6 tables) | Real-world, natural JOIN scenarios |
+   416→| Advanced (M41-60) | E-Commerce + Extensions | Complex (10 tables) | Complex relationships, analytics |
+   417→
+   418→### 5.2 School Database Schema (Beginner)
+   419→
+   420→```sql
+   421→-- ============================================
+   422→-- SCHOOL DATABASE — Beginner Modules (M1-M20)
+   423→-- 5 Tables, ~275 total records
+   424→-- ============================================
+   425→
+   426→CREATE TABLE students (
+   427→    id INTEGER PRIMARY KEY,
+   428→    name TEXT NOT NULL,
+   429→    grade TEXT CHECK(grade IN ('A', 'B', 'C', 'D', 'F')),
+   430→    city TEXT,
+   431→    age INTEGER CHECK(age BETWEEN 15 AND 25),
+   432→    email TEXT,
+   433→    enrollment_date DATE
+   434→);
+   435→
+   436→CREATE TABLE teachers (
+   437→    id INTEGER PRIMARY KEY,
+   438→    name TEXT NOT NULL,
+   439→    subject TEXT,
+   440→    experience_years INTEGER,
+   441→    salary DECIMAL(10, 2),
+   442→    hire_date DATE
+   443→);
+   444→
+   445→CREATE TABLE departments (
+   446→    id INTEGER PRIMARY KEY,
+   447→    name TEXT NOT NULL,
+   448→    head_teacher_id INTEGER,
+   449→    budget DECIMAL(10, 2),
+   450→    FOREIGN KEY (head_teacher_id) REFERENCES teachers(id)
+   451→);
+   452→
+   453→CREATE TABLE courses (
+   454→    id INTEGER PRIMARY KEY,
+   455→    name TEXT NOT NULL,
+   456→    teacher_id INTEGER,
+   457→    department_id INTEGER,
+   458→    credits INTEGER CHECK(credits BETWEEN 1 AND 5),
+   459→    max_students INTEGER DEFAULT 30,
+   460→    FOREIGN KEY (teacher_id) REFERENCES teachers(id),
+   461→    FOREIGN KEY (department_id) REFERENCES departments(id)
+   462→);
+   463→
+   464→CREATE TABLE enrollments (
+   465→    id INTEGER PRIMARY KEY,
+   466→    student_id INTEGER,
+   467→    course_id INTEGER,
+   468→    enrollment_date DATE,
+   469→    score DECIMAL(5, 2),
+   470→    grade TEXT,
+   471→    FOREIGN KEY (student_id) REFERENCES students(id),
+   472→    FOREIGN KEY (course_id) REFERENCES courses(id)
+   473→);
+   474→
+   475→-- INDEXES for practice demonstration
+   476→CREATE INDEX idx_students_city ON students(city);
+   477→CREATE INDEX idx_enrollments_student ON enrollments(student_id);
+   478→CREATE INDEX idx_enrollments_course ON enrollments(course_id);
+   479→```
+   480→
+   481→**Seed Data Volume:**
+   482→
+   483→| Table | Records | Notable Fields |
+   484→|---|---|---|
+   485→| students | 50 | 10 cities, grades A-F distribution |
+   486→| teachers | 10 | 5 subjects, 1-20 years experience |
+   487→| departments | 5 | Science, Math, Arts, Commerce, Sports |
+   488→| courses | 15 | 3 per department, varied credits |
+   489→| enrollments | 200 | Scores 0-100, some NULLs (in progress) |
+   490→
+   491→**Sample Seed Data (Excerpt):**
+   492→
+   493→```sql
+   494→INSERT INTO students (id, name, grade, city, age, email, enrollment_date) VALUES
+   495→(1, 'Rahul Sharma', 'A', 'Delhi', 18, 'rahul@example.com', '2023-06-15'),
+   496→(2, 'Priya Patel', 'B', 'Mumbai', 19, 'priya@example.com', '2023-06-16'),
+   497→(3, 'Amit Kumar', 'A', 'Delhi', 20, 'amit@example.com', '2023-06-17'),
+   498→-- ... (47 more records)
+   499→(50, 'Sneha Reddy', 'C', 'Hyderabad', 18, 'sneha@example.com', '2023-07-01');
+   500→
+   501→INSERT INTO teachers (id, name, subject, experience_years, salary, hire_date) VALUES
+   502→(1, 'Dr. Rajesh Verma', 'Mathematics', 15, 85000.00, '2010-06-01'),
+   503→(2, 'Prof. Sunita Singh', 'Physics', 12, 78000.00, '2012-01-15'),
+   504→-- ... (8 more records)
+   505→```
+   506→
+   507→### 5.3 E-Commerce Database Schema (Intermediate)
+   508→
+   509→```sql
+   510→-- ============================================
+   511→-- E-COMMERCE DATABASE — Intermediate (M21-M40)
+   512→-- 6 Tables, ~2,300 total records
+   513→-- ============================================
+   514→
+   515→CREATE TABLE customers (
+   516→    id INTEGER PRIMARY KEY,
+   517→    name TEXT NOT NULL,
+   518→    email TEXT UNIQUE,
+   519→    city TEXT,
+   520→    state TEXT,
+   521→    registration_date DATE,
+   522→    customer_type TEXT CHECK(customer_type IN ('regular', 'premium', 'vip'))
+   523→);
+   524→
+   525→CREATE TABLE categories (
+   526→    id INTEGER PRIMARY KEY,
+   527→    name TEXT NOT NULL,
+   528→    parent_category_id INTEGER,
+   529→    FOREIGN KEY (parent_category_id) REFERENCES categories(id)
+   530→);
+   531→
+   532→CREATE TABLE products (
+   533→    id INTEGER PRIMARY KEY,
+   534→    name TEXT NOT NULL,
+   535→    description TEXT,
+   536→    price DECIMAL(10, 2),
+   537→    stock_quantity INTEGER DEFAULT 0,
+   538→    category_id INTEGER,
+   539→    created_date DATE,
+   540→    is_active BOOLEAN DEFAULT 1,
+   541→    FOREIGN KEY (category_id) REFERENCES categories(id)
+   542→);
+   543→
+   544→CREATE TABLE orders (
+   545→    id INTEGER PRIMARY KEY,
+   546→    customer_id INTEGER,
+   547→    order_date DATETIME,
+   548→    total_amount DECIMAL(10, 2),
+   549→    status TEXT CHECK(status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+   550→    FOREIGN KEY (customer_id) REFERENCES customers(id)
+   551→);
+   552→
+   553→CREATE TABLE order_items (
+   554→    id INTEGER PRIMARY KEY,
+   555→    order_id INTEGER,
+   556→    product_id INTEGER,
+   557→    quantity INTEGER CHECK(quantity > 0),
+   558→    unit_price DECIMAL(10, 2),
+   559→    FOREIGN KEY (order_id) REFERENCES orders(id),
+   560→    FOREIGN KEY (product_id) REFERENCES products(id)
+   561→);
+   562→
+   563→CREATE TABLE payments (
+   564→    id INTEGER PRIMARY KEY,
+   565→    order_id INTEGER,
+   566→    payment_date DATETIME,
+   567→    amount DECIMAL(10, 2),
+   568→    payment_method TEXT CHECK(payment_method IN ('credit_card', 'debit_card', 'upi', 'netbanking', 'cod')),
+   569→    FOREIGN KEY (order_id) REFERENCES orders(id)
+   570→);
+   571→
+   572→-- Indexes
+   573→CREATE INDEX idx_customers_city ON customers(city);
+   574→CREATE INDEX idx_products_category ON products(category_id);
+   575→CREATE INDEX idx_orders_customer ON orders(customer_id);
+   576→CREATE INDEX idx_orders_date ON orders(order_date);
+   577→CREATE INDEX idx_order_items_order ON order_items(order_id);
+   578→```
+   579→
+   580→**Seed Data Volume:**
+   581→
+   582→| Table | Records | Notable Fields |
+   583→|---|---|---|
+   584→| customers | 100 | 15 cities, 10 states, 3 customer types |
+   585→| categories | 20 | 5 parent categories, 15 subcategories |
+   586→| products | 200 | Prices ₹100-₹50,000, varied stock |
+   587→| orders | 500 | Jan-Dec 2023, 5 statuses |
+   588→| order_items | 1,000+ | 1-5 items per order |
+   589→| payments | 500 | 5 payment methods |
+   590→
+   591→### 5.4 Advanced Database Schema (Advanced)
+   592→
+   593→```sql
+   594→-- ============================================
+   595→-- ADVANCED DATABASE — Advanced (M41-M60)
+   596→-- All E-Commerce tables PLUS 4 new tables
+   597→-- ~4,300 total records
+   598→-- ============================================
+   599→
+   600→-- (All E-Commerce tables from 5.3 included)
+   601→
+   602→CREATE TABLE reviews (
+   603→    id INTEGER PRIMARY KEY,
+   604→    product_id INTEGER,
+   605→    customer_id INTEGER,
+   606→    rating INTEGER CHECK(rating BETWEEN 1 AND 5),
+   607→    comment TEXT,
+   608→    review_date DATE,
+   609→    FOREIGN KEY (product_id) REFERENCES products(id),
+   610→    FOREIGN KEY (customer_id) REFERENCES customers(id)
+   611→);
+   612→
+   613→CREATE TABLE shipping (
+   614→    id INTEGER PRIMARY KEY,
+   615→    order_id INTEGER,
+   616→    address_line1 TEXT,
+   617→    address_line2 TEXT,
+   618→    city TEXT,
+   619→    state TEXT,
+   620→    pincode TEXT,
+   621→    shipping_status TEXT CHECK(shipping_status IN ('packed', 'in_transit', 'out_for_delivery', 'delivered', 'returned')),
+   622→    tracking_number TEXT,
+   623→    estimated_delivery DATE,
+   624→    FOREIGN KEY (order_id) REFERENCES orders(id)
+   625→);
+   626→
+   627→CREATE TABLE inventory_log (
+   628→    id INTEGER PRIMARY KEY,
+   629→    product_id INTEGER,
+   630→    change_quantity INTEGER,
+   631→    change_type TEXT CHECK(change_type IN ('restock', 'sale', 'return', 'adjustment')),
+   632→    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+   633→    FOREIGN KEY (product_id) REFERENCES products(id)
+   634→);
+   635→
+   636→CREATE TABLE customer_segments (
+   637→    id INTEGER PRIMARY KEY,
+   638→    customer_id INTEGER,
+   639→    segment_name TEXT CHECK(segment_name IN ('new_customer', 'regular', 'loyal', 'at_risk', 'churned', 'vip')),
+   640→    assigned_date DATE,
+   641→    FOREIGN KEY (customer_id) REFERENCES customers(id)
+   642→);
+   643→
+   644→-- Advanced indexes for optimization practice
+   645→CREATE INDEX idx_reviews_product ON reviews(product_id);
+   646→CREATE INDEX idx_reviews_rating ON reviews(rating);
+   647→CREATE INDEX idx_shipping_status ON shipping(shipping_status);
+   648→CREATE INDEX idx_inventory_product_time ON inventory_log(product_id, timestamp);
+   649→```
+   650→
+   651→**Additional Seed Data:**
+   652→
+   653→| Table | Records | Purpose |
+   654→|---|---|---|
+   655→| reviews | 500 | Window functions, sentiment analysis |
+   656→| shipping | 400 | Complex status tracking, date calculations |
+   657→| inventory_log | 1,000 | Running totals, time-series analysis |
+   658→| customer_segments | 150 | Segmentation queries, CTEs |
+   659→
+   660→---
+   661→
+   662→## 6. Curriculum Structure
+   663→
+   664→### 6.1 Complete 60-Module Map
+   665→
+   666→#### 🟢 BEGINNER LEVEL — School Database (Modules 1-20)
+   667→
+   668→| # | Module Title | Concepts Covered | Task Difficulty Range |
+   669→|---|---|---|---|
+   670→| 1 | What is Database & SQL? | DB basics, RDBMS, tables, rows, columns, SQL purpose | ⭐ to ⭐⭐ |
+   671→| 2 | Database vs Spreadsheet | When DBs are better, advantages, use cases | ⭐ to ⭐⭐ |
+   672→| 3 | SQL Syntax Basics | Statements, clauses, case sensitivity, semicolons, formatting | ⭐ to ⭐⭐⭐ |
+   673→| 4 | Data Types Overview | INTEGER, TEXT, REAL, DATE, DECIMAL, NULL concept | ⭐ to ⭐⭐ |
+   674→| 5 | SELECT Fundamentals | Single column selection, basic SELECT * | ⭐ to ⭐⭐ |
+   675→| 6 | SELECT Multiple Columns | Comma separation, column order, selecting specific sets | ⭐ to ⭐⭐⭐ |
+   676→| 7 | Column Aliases (AS) | Renaming output columns, AS keyword, aliases without AS | ⭐ to ⭐⭐⭐ |
+   677→| 8 | DISTINCT | Removing duplicates, single/multiple column DISTINCT | ⭐ to ⭐⭐⭐ |
+   678→| 9 | WHERE Introduction | Filtering rows, basic conditions, comparison operators intro | ⭐ to ⭐⭐ |
+   679→| 10 | **🎯 Mini Project 1: Student Directory** | Combine M1-M9 concepts | ⭐⭐ to ⭐⭐⭐⭐ |
+   680→| 11 | Comparison Operators | =, <>, !=, <, >, <=, >= with numbers and text | ⭐ to ⭐⭐⭐ |
+   681→| 12 | Logical Operators | AND, OR, NOT, operator precedence, parentheses | ⭐⭐ to ⭐⭐⭐⭐ |
+   682→| 13 | BETWEEN | Range queries, inclusive bounds, NOT BETWEEN, dates/numbers | ⭐ to ⭐⭐⭐ |
+   683→| 14 | IN Operator | Multiple value matching, IN vs OR, NOT IN | ⭐ to ⭐⭐⭐ |
+   684→| 15 | LIKE & Wildcards | % (any chars), _ (single char), case sensitivity, patterns | ⭐⭐ to ⭐⭐⭐⭐ |
+   685→| 16 | NULL Handling | IS NULL, IS NOT NULL, why = NULL fails, NULL in calculations | ⭐⭐ to ⭐⭐⭐ |
+   686→| 17 | ORDER BY Basics | Single column sort, ASC (default), DESC, text/number sorting | ⭐ to ⭐⭐⭐ |
+   687→| 18 | ORDER BY Multiple Columns | Multi-column sort, sort priority, mixing ASC/DESC | ⭐⭐ to ⭐⭐⭐⭐ |
+   688→| 19 | LIMIT & OFFSET | Result limiting, pagination (LIMIT/OFFSET), combining with ORDER BY | ⭐⭐ to ⭐⭐⭐⭐ |
+   689→| 20 | **🏆 Level Project: School Report Generator** | All M1-M19 concepts combined | ⭐⭐⭐ to ⭐⭐⭐⭐⭐ |
+   690→
+   691→#### 🟡 INTERMEDIATE LEVEL — E-Commerce Database (Modules 21-40)
+   692→
+   693→| # | Module Title | Concepts Covered | Prerequisites |
+   694→|---|---|---|---|
+   695→| 21 | Aggregate Functions Intro | What aggregates do, COUNT/SUM/AVG/MIN/MAX overview | M1-M20 |
+   696→| 22 | COUNT Deep Dive | COUNT(*), COUNT(column), COUNT(DISTINCT), NULL behavior | M21 |
+   697→| 23 | SUM & AVG | Total calculations, averages, rounding, NULL handling | M21 |
+   698→| 24 | MIN & MAX | Finding extremes, dates, text, combining with WHERE | M21 |
+   699→| 25 | GROUP BY Fundamentals | Row grouping, aggregate context, single column grouping | M21-M24 |
+   700→| 26 | GROUP BY Multiple Columns | Multi-column grouping, grouping hierarchy | M25 |
+   701→| 27 | HAVING Clause | Filtering groups, WHERE vs HAVING, aggregate conditions | M25-M26 |
+   702→| 28 | Subqueries Introduction | Nested queries, scalar subqueries, execution order | M1-M27 |
+   703→| 29 | WHERE Subqueries | Subquery in WHERE, comparison operators, IN with subquery | M28 |
+   704→| 30 | **🎯 Mini Project 2: Sales Analytics** | Aggregates + GROUP BY + subqueries | M21-M29 |
+   705→| 31 | SELECT Subqueries | Subquery in SELECT, correlated subqueries, computed columns | M28-M29 |
+   706→| 32 | EXISTS Operator | EXISTS vs IN, correlated EXISTS, NOT EXISTS | M28-M31 |
+   707→| 33 | INNER JOIN | Table relationships, matching rows, ON condition, aliases | M1-M32 |
+   708→| 34 | LEFT JOIN | All left rows + matching right, NULL for non-matches | M33 |
+   709→| 35 | RIGHT JOIN | All right rows + matching left, LEFT vs RIGHT equivalence | M34 |
+   710→| 36 | FULL OUTER JOIN | All rows from both tables, NULL handling both sides | M34-M35 |
+   711→| 37 | CROSS JOIN & SELF JOIN | Cartesian product, self-referencing, practical uses | M33-M36 |
+   712→| 38 | UNION & UNION ALL | Combining result sets, duplicate handling, column matching | M1-M37 |
+   713→| 39 | CASE Statement | Conditional logic, WHEN/THEN/ELSE, CASE in SELECT/WHERE/ORDER | M1-M38 |
+   714→| 40 | **🏆 Level Project: E-Commerce Analytics** | All M21-M39 combined, business intelligence queries | M21-M39 |
+   715→
+   716→#### 🔴 ADVANCED LEVEL — Full Database (Modules 41-60)
+   717→
+   718→| # | Module Title | Concepts Covered | Prerequisites |
+   719→|---|---|---|---|
+   720→| 41 | Window Functions Intro | OVER clause, PARTITION BY, ORDER BY in windows, vs GROUP BY | M1-M40 |
+   721→| 42 | ROW_NUMBER | Sequential numbering, partitioning, deduplication use case | M41 |
+   722→| 43 | RANK & DENSE_RANK | Ranking with gaps, dense ranking, competition scenarios | M42 |
+   723→| 44 | LAG & LEAD | Previous/next row access, default values, time-series analysis | M41 |
+   724→| 45 | Running Totals & Moving Averages | Cumulative SUM, window frames (ROWS BETWEEN), moving calculations | M41-M44 |
+   725→| 46 | CTE Introduction | WITH clause, readability, single CTE, naming | M1-M40 |
+   726→| 47 | Multiple CTEs | Comma-separated CTEs, chaining, step-by-step query building | M46 |
+   727→| 48 | Recursive CTEs | Hierarchy traversal, employee-manager trees, category trees, anchor + recursive part | M46-M47 |
+   728→| 49 | **🎯 Mini Project 3: Advanced Analytics** | Window functions + CTEs combined | M41-M48 |
+   729→| 50 | Views | CREATE VIEW, virtual tables, simplifying complex queries, view security | M1-M49 |
+   730→| 51 | Updating Views | Updatable view rules, WITH CHECK OPTION, view limitations | M50 |
+   731→| 52 | Indexes | CREATE INDEX, index types, when to index, performance impact, EXPLAIN QUERY PLAN | M1-M51 |
+   732→| 53 | Transactions | BEGIN/COMMIT/ROLLBACK, atomicity, practical transaction scenarios | M1-M52 |
+   733→| 54 | ACID Properties | Atomicity, Consistency, Isolation, Durability — theory + SQLite examples | M53 |
+   734→| 55 | Triggers | CREATE TRIGGER, BEFORE/AFTER, INSERT/UPDATE/DELETE events, audit logs | M1-M54 |
+   735→| 56 | Query Optimization | EXPLAIN QUERY PLAN, identifying slow queries, optimization strategies | M52 |
+   736→| 57 | Execution Plans | Reading query plans, identifying bottlenecks, full scan vs index scan | M56 |
+   737→| 58 | Data Modeling | Normalization (1NF, 2NF, 3NF), relationships (1:1, 1:N, M:N), ERD basics | M1-M57 |
+   738→| 59 | **🎯 Mini Project 4: Performance Optimization** | Indexing + optimization + analysis | M52-M58 |
+   739→| 60 | **👑 Capstone: Business Intelligence System** | ALL concepts from M1-M59, complete data analysis system | M1-M59 |
+   740→
+   741→### 6.2 Module Difficulty Progression
+   742→
+   743→```
+   744→DIFFICULTY CURVE ACROSS 60 MODULES:
+   745→
+   746→Easy    ┤ ████
+   747→        │ ████████
+   748→Medium  │      ████████████
+   749→        │           ████████████████
+   750→Hard    │                ████████████████████
+   751→        │                        ████████████████████
+   752→V.Hard  │                                    ██████████
+   753→        └────────────────────────────────────────────────►
+   754→          M1        M20        M40        M60
+   755→          │         │          │          │
+   756→       Beginner   Level 1   Level 2   Capstone
+   757→```
+   758→
+   759→---
+   760→
+   761→## 7. Module Content Template
+   762→
+   763→### 7.1 Standard 7-Section Structure
+   764→
+   765→Every module follows this exact structure (60 modules × 7 sections = 420 content sections):
+   766→
+   767→```
+   768→┌─────────────────────────────────────────────────┐
+   769→│ MODULE [X]: [TITLE]                             │
+   770→│ Level: [Beginner/Intermediate/Advanced]         │
+   771→│ Estimated Time: [XX minutes]                    │
+   772→├─────────────────────────────────────────────────┤
+   773→│                                                 │
+   774→│ SECTION 1: 📖 THEORY                            │
+   775→│ ├── Concept explanation (simple → complex)     │
+   776→│ ├── Real-world analogy (EN + HI)               │
+   777→│ ├── Visual diagrams (SVG/Mermaid)               │
+   778→│ ├── Why this concept matters                   │
+   779→│ └── Key terminology defined                     │
+   780→│                                                 │
+   781→│ SECTION 2: 🎬 ANIMATED TUTORIAL                │
+   782→│ ├── Code typing animation (sequential)          │
+   783→│ ├── Table visualization (rows highlighted)      │
+   784→│ ├── Result comparison animation                 │
+   785→│ └── Play/Pause/Replay controls                  │
+   786→│                                                 │
+   787→│ SECTION 3: 💡 SYNTAX & EXAMPLES                │
+   788→│ ├── Syntax box (color-coded)                    │
+   789→│ ├── Example 1: Easy (with output)               │
+   790→│ ├── Example 2: Medium (with output)             │
+   791→│ ├── Example 3: Hard (with output)               │
+   792→│ ├── Example 4: Very Hard (with output)          │
+   793→│ └── "Try it yourself" → link to console         │
+   794→│                                                 │
+   795→│ SECTION 4: ⚠️ COMMON MISTAKES                  │
+   796→│ ├── Mistake #1: Description + correct approach │
+   797→│ ├── Mistake #2: Description + correct approach │
+   798→│ ├── Mistake #3: Description + correct approach │
+   799→│ └── 💡 Pro tips                                 │
+   800→│                                                 │
+   801→│ SECTION 5: 📝 QUIZ (4 questions, 70% to pass)  │
+   802→│ ├── Q1: MCQ (theory check)                     │
+   803→│ ├── Q2: Output Prediction (logic check)        │
+   804→│ ├── Q3: Query Building (practical check)       │
+   805→│ ├── Q4: Fill in Blanks (syntax check)          │
+   806→│ └── Unlimited retries, explanations shown       │
+   807→│                                                 │
+   808→│ SECTION 6: ⌨ PRACTICE CONSOLE (5 tasks)       │
+   809→│ ├── Task 1: ⭐ Very Easy                       │
+   810→│ ├── Task 2: ⭐⭐ Easy                          │
+   811→│ ├── Task 3: ⭐⭐⭐ Medium                      │
+   812→│ ├── Task 4: ⭐⭐⭐⭐ Hard                      │
+   813→│ ├── Task 5: ⭐⭐⭐⭐⭐ Very Hard               │
+   814→│ └── 3-level hints per task                     │
+   815→│                                                 │
+   816→│ SECTION 7: ✅ COMPLETION                       │
+   817→│ ├── Requirements checklist                     │
+   818→│ ├── Progress summary                           │
+   819→│ ├── Next module preview + unlock               │
+   820→│ └── "What you learned" recap                   │
+   821→│                                                 │
+   822→└─────────────────────────────────────────────────┘
+   823→```
+   824→
+   825→### 7.2 Module JSON Schema
+   826→
+   827→```json
+   828→{
+   829→  "id": "module-32",
+   830→  "number": 32,
+   831→  "level": "intermediate",
+   832→  "title": {
+   833→    "en": "LEFT JOIN",
+   834→    "hi": "LEFT JOIN Samajhna"
+   835→  },
+   836→  "estimatedTime": "25 minutes",
+   837→  "prerequisites": ["module-31", "module-33"],
+   838→  "learningObjectives": {
+   839→    "en": [
+   840→      "Understand what LEFT JOIN returns",
+   841→      "Write LEFT JOIN queries with correct syntax",
+   842→      "Identify when to use LEFT JOIN vs INNER JOIN"
+   843→    ],
+   844→    "hi": [
+   845→      "LEFT JOIN kya return karta hai samajhna",
+   846→      "LEFT JOIN queries sahi syntax se likhna",
+   847→      " kab LEFT JOIN vs INNER JOIN use karna hai"
+   848→    ]
+   849→  },
+   850→  "theory": {
+   851→    "sections": [
+   852→      {
+   853→        "heading": { "en": "...", "hi": "..." },
+   854→        "content": { "en": "...", "hi": "..." },
+   855→        "diagram": "path/to/diagram.svg"
+   856→      }
+   857→    ]
+   858→  },
+   859→  "animatedTutorial": {
+   860→    "steps": [
+   861→      {
+   862→        "codeTyped": "SELECT * FROM employees LEFT JOIN departments ON ...",
+   863→        "tableState": { "highlightedRows": [1, 3, 5] },
+   864→        "explanation": { "en": "...", "hi": "..." }
+   865→      }
+   866→    ]
+   867→  },
+   868→  "syntax": {
+   869→    "template": "SELECT columns FROM table1 LEFT JOIN table2 ON condition",
+   870→    "components": [
+   871→      { "part": "SELECT columns", "description": { "en": "...", "hi": "..." } }
+   872→    ]
+   873→  },
+   874→  "examples": [
+   875→    {
+   876→      "difficulty": "easy",
+   877→      "query": "SELECT e.name, d.name FROM employees e LEFT JOIN departments d ON e.dept_id = d.id",
+   878→      "output": { "columns": ["name", "name"], "rows": [["Rahul", "Sales"], ["Amit", null]] },
+   879→      "explanation": { "en": "...", "hi": "..." }
+   880→    }
+   881→  ],
+   882→  "commonMistakes": [
+   883→    {
+   884→      "mistake": { "en": "...", "hi": "..." },
+   885→      "correction": { "en": "...", "hi": "..." }
+   886→    }
+   887→  ],
+   888→  "quiz": {
+   889→    "questions": [
+   890→      {
+   891→        "type": "mcq",
+   892→        "question": { "en": "...", "hi": "..." },
+   893→        "options": [{ "en": "...", "hi": "..." }],
+   894→        "correctIndex": 2,
+   895→        "explanation": { "en": "...", "hi": "..." }
+   896→      }
+   897→    ]
+   898→  },
+   899→  "practiceTasks": [
+   900→    {
+   901→      "id": "task-1",
+   902→      "difficulty": "very_easy",
+   903→      "description": { "en": "...", "hi": "..." },
+   904→      "expectedResult": {
+   905→        "columns": ["name", "department"],
+   906→        "rows": [["Rahul", "Sales"], ["Amit", null]]
+   907→      },
+   908→      "hints": [
+   909→        { "level": 1, "type": "concept", "content": { "en": "...", "hi": "..." } },
+   910→        { "level": 2, "type": "structure", "content": { "en": "...", "hi": "..." } },
+   911→        { "level": 3, "type": "partial", "content": { "en": "...", "hi": "..." } }
+   912→      ],
+   913→      "validation": {
+   914→        "ignoreColumnOrder": false,
+   915→        "ignoreRowOrder": true,
+   916→        "checkColumnNames": false,
+   917→        "numericTolerance": 0.01
+   918→      }
+   919→    }
+   920→  ]
+   921→}
+   922→```
+   923→
+   924→---
+   925→
+   926→## 8. Practice Console Architecture
+   927→
+   928→### 8.1 3-Panel IDE Layout (Desktop)
+   929→
+   930→```
+   931→┌─────────────────────────────────────────────────────────────────┐
+   932→│  M32: LEFT JOIN        [📋 Tasks ▾] [💡 Hints] [⚙ Settings]    │
+   933→├──────────────┬──────────────────────────┬──────────────────────┤
+   934→│              │                          │                      │
+   935→│  📚 SCHEMA   │  ⌨ QUERY EDITOR         │  📊 RESULTS          │
+   936→│  (Left Panel)│  (Center Panel)          │  (Right Panel)       │
+   937→│              │                          │                      │
+   938→│  📁 school_db│  ┌────────────────────┐ │  ┌────┬────────┐    │
+   939→│              │  │ 1| SELECT e.name,  │ │  │name│ dept   │    │
+   940→│  📄 students │  │ 2|   d.dept_name   │ │  ├────┼────────┤    │
+   941→│   ├─id 🔑    │  │ 3| FROM employees  │ │  │Rahu│ Sales  │    │
+   942→│   ├─name     │  │ 4|   e             │ │  │Amit│ NULL   │    │
+   943→│   ├─grade    │  │ 5| LEFT JOIN       │ │  │Priy│ HR     │    │
+   944→│   ├─city     │  │ 6|   departments d │ │  └────┴────────┘    │
+   945→│   └─email    │  │ 7|   ON e.dept_id  │ │                      │
+   946→│              │  │ 8|   = d.id;       │ │  ✅ 3 rows returned  │
+   947→│  📄 teachers │  └────────────────────┘ │                      │
+   948→│   ├─id 🔑    │                          │  🎯 Task 2/5         │
+   949→│   ├─name     │  [▶ RUN] [↺ RESET]      │  ✅ CORRECT!         │
+   950→│   └─...      │  [🗑 CLEAR] [📋 COPY]   │     [Next Task →]    │
+   951→│              │                          │                      │
+   952→│  📄 courses  │  Query took: 0.003s     │  📊 Stats:           │
+   953→│   └─...      │  Rows: 3                │  Attempts: 2         │
+   954→│              │                          │  Hints used: 1      │
+   955→│  [Click to   │                          │                      │
+   956→│   preview    │                          │                      │
+   957→│   data]      │                          │                      │
+   958→├──────────────┴──────────────────────────┴──────────────────────┤
+   959→│  📋 TASK 2/5: ⭐⭐ Easy                                       │
+   960→│  Show all employees with their department names. Include      │
+   961→│  employees who DON'T have a department (show NULL).           │
+   962→│                                                                 │
+   963→│  [💡 Hint 1] [💡 Hint 2] [💡 Hint 3] [⏭ Skip Task]           │
+   964→├───────────────────────────────────────────────────────────────┤
+   965→│  Task Progress: [T1 ✅] [T2 🔄] [T3 ⬜] [T4 ⬜] [T5 ⬜]        │
+   966→│  Passed: 1/5 (Need 3/5 to complete)                           │
+   967→└───────────────────────────────────────────────────────────────┘
+   968→```
+   969→
+   970→### 8.2 Panel Specifications
+   971→
+   972→| Panel | Width (Desktop) | Contents | Interactions |
+   973→|---|---|---|---|
+   974→| **Schema Panel** | 220px fixed | Database tree, tables, columns, PK/FK indicators | Click table → preview data (modal), click column → highlight in editor |
+   975→| **Editor Panel** | Flexible (remaining) | SQL input, line numbers, syntax highlighting | Type query, keyboard shortcuts (Ctrl+Enter = Run) |
+   976→| **Results Panel** | 35% of remaining | Results table, validation feedback, task progress | Scroll results, see diff on wrong answer |
+   977→| **Task Bar** | Bottom fixed | Task description, hint buttons, skip option, progress | Click hints (progressive unlock), next task |
+   978→
+   979→### 8.3 Editor Features (Basic)
+   980→
+   981→| Feature | Implemented | Notes |
+   982→|---|---|---|
+   983→| SQL Syntax Highlighting | ✅ | Keywords (blue), strings (green), numbers (orange), comments (gray) |
+   984→| Line Numbers | ✅ | Left gutter |
+   985→| Multi-line Support | ✅ | Enter creates newline |
+   986→| Tab Support | ✅ | Tab inserts 2 spaces |
+   987→| Query History | ❌ | Not in v1 |
+   988→| Autocomplete | ❌ | Explicitly rejected (Requirement #19) |
+   989→| Auto-format | ❌ | Not in v1 |
+   990→| Error Detection | ❌ | Only on RUN (via SQLite error) |
+   991→
+   992→### 8.4 Keyboard Shortcuts
+   993→
+   994→| Shortcut | Action |
+   995→|---|---|
+   996→| `Ctrl + Enter` / `Cmd + Enter` | Run query |
+   997→| `Ctrl + L` | Clear editor |
+   998→| `Esc` | Close modals/preview |
+   999→| `Tab` | Insert 2 spaces |
+  1000→
+  1001→---
+  1002→
+  1003→## 9. Query Validation Engine
+  1004→
+  1005→### 9.1 Validation Algorithm
+  1006→
+  1007→```typescript
+  1008→// PSEUDO-CODE — Actual implementation in TypeScript
+  1009→
+  1010→async function validateUserQuery(
+  1011→  userQuery: string,
+  1012→  task: PracticeTask,
+  1013→  dbInstance: Database
+  1014→): Promise<ValidationResult> {
+  1015→
+  1016→  // STEP 1: Execute user's query
+  1017→  let userResult: QueryResult;
+  1018→  try {
+  1019→    userResult = await dbInstance.execute(userQuery);
+  1020→  } catch (error) {
+  1021→    // STEP 2a: Handle execution error
+  1022→    return {
+  1023→      status: 'ERROR',
+  1024→      friendlyMessage: generateFriendlyError(error),
+  1025→      technicalError: error.message,
+  1026→      suggestion: detectCommonMistake(error) // FORM→FROM etc.
+  1027→    };
+  1028→  }
+  1029→
+  1030→  // STEP 2b: Query executed successfully, now compare results
+  1031→  const expected = task.expectedResult;
+  1032→  const rules = task.validation;
+  1033→
+  1034→  // STEP 3: Column comparison
+  1035→  const columnCheck = compareColumns(
+  1036→    userResult.columns,
+  1037→    expected.columns,
+  1038→    rules
+  1039→  );
+  1040→
+  1041→  if (!columnCheck.match) {
+  1042→    return {
+  1043→      status: 'WRONG',
+  1044→      message: 'Column structure doesn\'t match',
+  1045→      diff: generateColumnDiff(userResult, expected)
+  1046→    };
+  1047→  }
+  1048→
+  1049→  // STEP 4: Row comparison
+  1050→  const normalizedUser = normalizeRows(userResult.rows, rules);
+  1051→  const normalizedExpected = normalizeRows(expected.rows, rules);
+  1052→
+  1053→  const rowCheck = compareRows(normalizedUser, normalizedExpected, rules);
+  1054→
+  1055→  if (!rowCheck.match) {
+  1056→    return {
+  1057→      status: 'WRONG',
+  1058→      message: 'Output rows don\'t match expected result',
+  1059→      diff: generateRowDiff(normalizedUser, normalizedExpected)
+  1060→    };
+  1061→  }
+  1062→
+  1063→  // STEP 5: Everything matches!
+  1064→  return {
+  1065→    status: 'SUCCESS',
+  1066→    message: '✅ Correct! Well done!',
+  1067→    rowCount: userResult.rows.length
+  1068→  };
+  1069→}
+  1070→```
+  1071→
+  1072→### 9.2 Result Normalization Rules
+  1073→
+  1074→| Rule | Default | When to Change | Example |
+  1075→|---|---|---|---|
+  1076→| `ignoreColumnOrder` | `false` | `true` if task doesn't specify column order | Task: "show name and salary" — either order OK |
+  1077→| `ignoreRowOrder` | `true` | `false` if task has ORDER BY requirement | Task: "sort by salary DESC" — order matters |
+  1078→| `caseSensitiveData` | `false` | `true` for case-specific tasks | Task: "match exact product name case" |
+  1079→| `trimWhitespace` | `true` | Never change | 'Rahul ' == 'Rahul' |
+  1080→| `numericTolerance` | `0.01` | `0.001` for precise calculations | AVG(salary) = 52345.67 vs 52345.68 |
+  1081→| `checkColumnNames` | `false` | `true` if aliases required | Task: "show as 'total_salary'" |
+  1082→
+  1083→### 9.3 Comparison Logic Detail
+  1084→
+  1085→```typescript
+  1086→function compareColumns(userCols, expectedCols, rules): boolean {
+  1087→  if (rules.checkColumnNames) {
+  1088→    // Exact column name matching (including aliases)
+  1089→    return arraysEqual(userCols, expectedCols);
+  1090→  }
+  1091→  // Just count check
+  1092→  return userCols.length === expectedCols.length;
+  1093→}
+  1094→
+  1095→function normalizeRows(rows, rules): NormalizedRow[] {
+  1096→  return rows.map(row =>
+  1097→    row.map(cell => {
+  1098→      if (typeof cell === 'string') {
+  1099→        if (rules.trimWhitespace) cell = cell.trim();
+  1100→        if (!rules.caseSensitiveData) cell = cell.toLowerCase();
+  1101→      }
+  1102→      if (typeof cell === 'number') {
+  1103→        cell = round(cell, rules.numericTolerance);
+  1104→      }
+  1105→      if (cell === null || cell === undefined) {
+  1106→        cell = null; // Normalize both null and undefined
+  1107→      }
+  1108→      return cell;
+  1109→    })
+  1110→  );
+  1111→}
+  1112→
+  1113→function compareRows(userRows, expectedRows, rules): boolean {
+  1114→  if (userRows.length !== expectedRows.length) return false;
+  1115→
+  1116→  let userSorted = userRows;
+  1117→  let expectedSorted = expectedRows;
+  1118→
+  1119→  if (rules.ignoreRowOrder) {
+  1120→    // Sort both by stringified representation for comparison
+  1121→    userSorted = [...userRows].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  1122→    expectedSorted = [...expectedRows].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  1123→  }
+  1124→
+  1125→  return userSorted.every((row, i) =>
+  1126→    row.every((cell, j) => cellEquals(cell, expectedSorted[i][j]))
+  1127→  );
+  1128→}
+  1129→```
+  1130→
+  1131→### 9.4 Diff View Generation
+  1132→
+  1133→When validation fails, show visual comparison:
+  1134→
+  1135→```
+  1136→❌ OUTPUT DOESN'T MATCH
+  1137→
+  1138→┌───────────── Expected ─────────────┐
+  1139→│  name    │  department             │
+  1140→│  Rahul   │  Sales                  │
+  1141→│  Amit    │  (NULL)                 │
+  1142→│  Priya   │  HR                     │
+  1143→└────────────────────────────────────┘
+  1144→
+  1145→┌───────────── Your Output ──────────┐
+  1146→│  name    │  department             │
+  1147→│  Rahul   │  Sales                  │
+  1148→│  Priya   │  HR                     │
+  1149→└────────────────────────────────────┘
+  1150→
+  1151→📊 Analysis:
+  1152→├── Row count: Expected 3, Got 2 (missing 1 row)
+  1153→├── Amit with NULL department missing
+  1154→│
+  1155→💡 Likely issue: You used INNER JOIN instead of LEFT JOIN
+  1156→💡 Try: LEFT JOIN departments d ON e.dept_id = d.id
+  1157→```
+  1158→
+  1159→---
+  1160→
+  1161→## 10. Hint System
+  1162→
+  1163→### 10.1 3-Level Progressive Structure
+  1164→
+  1165→Each of the 300 practice tasks has exactly 3 hints, unlocked sequentially:
+  1166→
+  1167→| Level | Type | Content Style | Example (LEFT JOIN Task) |
+  1168→|---|---|---|---|
+  1169→| **Level 1** | Concept | Plain language reminder, no code | "LEFT JOIN left table ke SAARE rows rakhta hai. Right table me match na ho to NULL aata hai." |
+  1170→| **Level 2** | Structure | Query skeleton with blanks | `SELECT ___ FROM employees ___ departments ___ ON ___ = ___` |
+  1171→| **Level 3** | Partial | Almost-complete query, one blank | `SELECT e.name, d.name FROM employees e LEFT JOIN departments d ON e.___ = d.id` |
+  1172→
+  1173→### 10.2 Hint Unlock Logic
+  1174→
+  1175→```
+  1176→HINT FLOW:
+  1177→
+  1178→[Task Active]
+  1179→     │
+  1180→     ▼
+  1181→[💡 Hint 1] ← Always available (free)
+  1182→     │ Click
+  1183→     ▼
+  1184→[Hint 1 shown] [💡 Hint 2 appears]
+  1185→     │ Click
+  1186→     ▼
+  1187→[Hint 2 shown] [💡 Hint 3 appears]
+  1188→     │ Click
+  1189→     ▼
+  1190→[Hint 3 shown] [❌ No more hints]
+  1191→     │
+  1192→     ▼
+  1193→[⏭ Skip Task option appears after all 3 hints]
+  1194→
+  1195→RULES:
+  1196→├── Hints don't unlock each other until clicked
+  1197→├── Hint usage tracked (1-3 per task)
+  1198→├── Skipped tasks don't count toward 3/5 requirement
+  1199→└── Hint usage shown in stats (encourage independent solving)
+  1200→```
+  1201→
+  1202→### 10.3 Hint Content Template (JSON)
+  1203→
+  1204→```json
+  1205→{
+  1206→  "taskId": "module-32-task-2",
+  1207→  "hints": [
+  1208→    {
+  1209→      "level": 1,
+  1210→      "type": "concept",
+  1211→      "content": {
+  1212→        "en": "LEFT JOIN keeps ALL rows from the left table. If there's no match in the right table, the right columns show NULL.",
+  1213→        "hi": "LEFT JOIN left table ke SAARE rows rakhta hai. Right table me match nahi mila to right columns me NULL dikhta hai."
+  1214→      }
+  1215→    },
+  1216→    {
+  1217→      "level": 2,
+  1218→      "type": "structure",
+  1219→      "content": {
+  1220→        "en": "SELECT [columns] FROM [left_table] LEFT JOIN [right_table] ON [join_condition]",
+  1221→        "hi": "SELECT [columns] FROM [left_table] LEFT JOIN [right_table] ON [join_condition]"
+  1222→      }
+  1223→    },
+  1224→    {
+  1225→      "level": 3,
+  1226→      "type": "partial",
+  1227→      "content": {
+  1228→        "en": "SELECT e.name, d.name FROM employees e LEFT JOIN departments d ON e.dept_id = ___",
+  1229→        "hi": "Sirf last blank bachi hai — departments table ki id column ka naam kya hai?"
+  1230→      }
+  1231→    }
+  1232→  ]
+  1233→}
+  1234→```
+  1235→
+  1236→---
+  1237→
+  1238→## 11. Error Feedback System
+  1239→
+  1240→### 11.1 Error Display Structure
+  1241→
+  1242→When query execution fails:
+  1243→
+  1244→```
+  1245→┌─────────────────────────────────────────────────────┐
+  1246→│ ❌ QUERY ERROR                                     │
+  1247→├─────────────────────────────────────────────────────┤
+  1248→│                                                     │
+  1249→│  💡 Aapne "FORM" likha hai —                    │
+  1250→│     correct keyword "FROM" hai.                   │
+  1251→│     (Yeh bahut common typo hai!)                  │
+  1252→│                                                     │
+  1253→│  ──────── Technical Details ────────               │
+  1254→│  SQLite Error: near "FORM": syntax error          │
+  1255→│  Line: 1, Column: 14                              │
+  1256→│                                                     │
+  1257→│  [✏️ Fix in Editor]  [💡 Show Hint]               │
+  1258→│                                                     │
+  1259→└─────────────────────────────────────────────────────┘
+  1260→```
+  1261→
+  1262→### 11.2 Common Error Pattern Detection
+  1263→
+  1264→| Error Pattern | SQLite Message Fragment | Friendly Suggestion |
+  1265→|---|---|---|
+  1266→| `FORM` instead of `FROM` | `near "FORM": syntax error` | "Aapne FORM likha hai — FROM hona chahiye" |
+  1267→| `WERE` instead of `WHERE` | `near "WERE": syntax error` | "WERE → WHERE spelling check karo" |
+  1268→| Missing semicolon (rare in SQLite) | Usually OK | N/A (SQLite doesn't require semicolons) |
+  1269→| Missing quotes | `near "A": syntax error` | "String values ko quotes me rakho: 'A' ya \"A\"" |
+  1270→| Wrong table name | `no such table: student` | "Table 'student' nahi mila. Schema dekho — 'students' hai" |
+  1271→| Wrong column name | `no such column: nam` | "Column 'nam' nahi hai. Schema panel me columns dekho" |
+  1272→| Unclosed string | `unterminated string` | "Quote close karna bhool gaye — '..." ' missing" |
+  1273→| Invalid operator | `near "<>=": syntax error` | "Invalid operator. Valid: =, <>, <, >, <=, >=" |
+  1274→
+  1275→### 11.3 Error Feedback Priority
+  1276→
+  1277→```
+  1278→ERROR DISPLAY ORDER:
+  1279→1. Friendly explanation (if pattern detected)
+  1280→2. Technical SQLite error (always shown)
+  1281→3. Action buttons (Fix / Hint)
+  1282→```
+  1283→
+  1284→---
+  1285→
+  1286→## 12. Sandbox Mode
+  1287→
+  1288→### 12.1 Sandbox Features
+  1289→
+  1290→| Feature | Status | Notes |
+  1291→|---|---|---|
+  1292→| CREATE TABLE | ✅ Allowed | User can create own tables |
+  1293→| INSERT INTO | ✅ Allowed | Add data to any table |
+  1294→| UPDATE | ✅ Allowed | Modify existing data |
+  1295→| DELETE | ✅ Allowed | Remove rows |
+  1296→| DROP TABLE | ✅ Allowed | Remove tables (including seeded ones) |
+  1297→| ALTER TABLE | ✅ Allowed | Modify table structure |
+  1298→| CREATE VIEW/INDEX/TRIGGER | ✅ Allowed | All DDL supported |
+  1299→| Transactions | ✅ Allowed | BEGIN/COMMIT/ROLLBACK |
+  1300→| **Reset Database** | ✅ Button | Restores original seed data |
+  1301→| **Save Sandbox State** | ❌ Not in v1 | localStorage space limitation |
+  1302→| **Export/Import** | ❌ Not in v1 | Future feature |
+  1303→
+  1304→### 12.2 Isolation Architecture
+  1305→
+  1306→```
+  1307→DATABASE INSTANCES:
+  1308→
+  1309→┌─────────────────────────────────────┐
+  1310→│  Module Task Database               │
+  1311→│  (Fresh instance per module)        │
+  1312→│  ├── Task validation runs here      │
+  1313→│  ├── Resets on module entry         │
+  1314→│  └── Isolated from sandbox          │
+  1315→└─────────────────────────────────────┘
+  1316→
+  1317→┌─────────────────────────────────────┐
+  1318→│  Sandbox Database                   │
+  1319→│  (Persistent during session)        │
+  1320→│  ├── User experiments here          │
+  1321→│  ├── CREATE/DROP allowed            │
+  1322→│  ├── Reset button restores seed     │
+  1323→│  └── Isolated from tasks            │
+  1324→└─────────────────────────────────────┘
+  1325→
+  1326→RULE: Kisi bhi module task me sandbox
+  1327→      ka asar NAHI padta, aur vice versa.
+  1328→```
+  1329→
+  1330→### 12.3 Sandbox UI
+  1331→
+  1332→```
+  1333→┌─────────────────────────────────────────────┐
+  1334→│ 🧪 SANDBOX MODE (Free Practice)           │
+  1335→│ [ℹ️ How it works] [🔄 Reset Database]     │
+  1336→├─────────────────────────────────────────────┤
+  1337→│                                             │
+  1338→│  (Same 3-panel layout as console)           │
+  1339→│  But NO task bar, NO validation             │
+  1340→│  Just: Schema + Editor + Results            │
+  1341→│                                             │
+  1342→│  User can:                                  │
+  1343→│  ✅ Create own tables                      │
+  1344→│  ✅ Modify existing data                    │
+  1345→│  ✅ Drop tables (yolo mode)                │
+  1346→│  ✅ Practice without judgment               │
+  1347→│                                             │
+  1348→│  [🔄 Reset] = Original data restore hoga  │
+  1349→│                                             │
+  1350→└─────────────────────────────────────────────┘
+  1351→```
+  1352→
+  1353→---
+  1354→
+  1355→## 13. Quiz System
+  1356→
+  1357→### 13.1 Question Type Specifications
+  1358→
+  1359→#### Type 1: MCQ (Multiple Choice)
+  1360→
+  1361→```json
+  1362→{
+  1363→  "type": "mcq",
+  1364→  "question": {
+  1365→    "en": "What does LEFT JOIN return when there's no match in the right table?",
+  1366→    "hi": "LEFT JOIN me right table se match na mile to kya return hota hai?"
+  1367→  },
+  1368→  "options": [
+  1369→    { "en": "Only matching rows", "hi": "Sirf matching rows" },
+  1370→    { "en": "All left rows with NULL for right columns", "hi": "Saare left rows, right columns me NULL" },
+  1371→    { "en": "An error", "hi": "Error aata hai" },
+  1372→    { "en": "All rows from both tables", "hi": "Dono tables ke saare rows" }
+  1373→  ],
+  1374→  "correctIndex": 1,
+  1375→  "explanation": {
+  1376→    "en": "LEFT JOIN preserves ALL rows from left table. Non-matching right table columns become NULL.",
+  1377→    "hi": "LEFT JOIN left table ke saare rows rakhta hai. Non-matching right columns NULL ban jate hain."
+  1378→  }
+  1379→}
+  1380→```
+  1381→
+  1382→#### Type 2: Output Prediction
+  1383→
+  1384→```json
+  1385→{
+  1386→  "type": "output_prediction",
+  1387→  "queryShown": "SELECT COUNT(*), city FROM students GROUP BY city HAVING COUNT(*) > 2 ORDER BY COUNT(*) DESC;",
+  1388→  "question": {
+  1389→    "en": "What will this query return?",
+  1390→    "hi": "Yeh query kya return karegi?"
+  1391→  },
+  1392→  "options": [
+  1393→    {
+  1394→      "label": "A",
+  1395→      "result": { "columns": ["COUNT(*)", "city"], "rows": [["15", "Delhi"], ["12", "Mumbai"]] }
+  1396→    },
+  1397→    {
+  1398→      "label": "B",
+  1399→      "result": { "columns": ["COUNT(*)", "city"], "rows": [["15", "Delhi"]] }
+  1400→    },
+  1401→    {
+  1402→      "label": "C",
+  1403→      "result": { "columns": ["COUNT(*)", "city"], "rows": [["15", "Delhi"], ["12", "Mumbai"], ["8", "Bangalore"]] }
+  1404→    },
+  1405→    {
+  1406→      "label": "D",
+  1407→      "result": { "error": "Error: Invalid syntax" }
+  1408→    }
+  1409→  ],
+  1410→  "correctIndex": 0,
+  1411→  "explanation": {
+  1412→    "en": "HAVING filters groups with COUNT > 2. ORDER BY sorts by count descending. Only Delhi and Mumbai have more than 2 students.",
+  1413→    "hi": "HAVING un groups ko filter karta hai jinka COUNT > 2 hai. Sirf Delhi aur Mumbai me 2 se zyada students hain."
+  1414→  }
+  1415→}
+  1416→```
+  1417→
+  1418→#### Type 3: Query Building (Drag-Drop)
+  1419→
+  1420→```json
+  1421→{
+  1422→  "type": "query_building",
+  1423→  "description": {
+  1424→    "en": "Build a query to find average salary by department",
+  1425→    "hi": "Department-wise average salary nikalne ki query banao"
+  1426→  },
+  1427→  "wordBank": ["SELECT", "AVG(salary)", "FROM", "employees", "GROUP BY", "department"],
+  1428→  "correctSequence": ["SELECT", "AVG(salary)", "FROM", "employees", "GROUP BY", "department"],
+  1429→  "explanation": {
+  1430→    "en": "SELECT the aggregate, FROM the table, GROUP BY the category",
+  1431→    "hi": "Pehle aggregate select karo, phir table, phir group by category"
+  1432→  }
+  1433→}
+  1434→```
+  1435→
+  1436→#### Type 4: Fill in Blanks
+  1437→
+  1438→```json
+  1439→{
+  1440→  "type": "fill_blanks",
+  1441→  "template": "SELECT ___(salary), department FROM employees ___ department",
+  1442→  "blanks": [
+  1443→    {
+  1444→      "position": 0,
+  1445→      "options": ["AVG", "COUNT", "MAX", "MIN"],
+  1446→      "correct": "AVG"
+  1447→    },
+  1448→    {
+  1449→      "position": 1,
+  1450→      "options": ["GROUP BY", "ORDER BY", "WHERE", "HAVING"],
+  1451→      "correct": "GROUP BY"
+  1452→    }
+  1453→  ],
+  1454→  "explanation": {
+  1455→    "en": "AVG for average, GROUP BY to group results by department",
+  1456→    "hi": "Average ke liye AVG, results ko department me group karne ke liye GROUP BY"
+  1457→  }
+  1458→}
+  1459→```
+  1460→
+  1461→### 13.2 Quiz Rules
+  1462→
+  1463→| Rule | Value |
+  1464→|---|---|
+  1465→| Questions per module | 4 (one of each type, rotating which specific question) |
+  1466→| Pass threshold | 70% (3/4 correct) |
+  1467→| Retry limit | Unlimited |
+  1468→| Time limit | None |
+  1469→| Feedback | Instant, with explanation |
+  1470→| Question order | Fixed (not randomized — consistent learning) |
+  1471→| Wrong answer behavior | Show correct + explanation, user can continue |
+  1472→| Score calculation | `correct_count / total_questions × 100` |
+  1473→| Best score tracking | Only best attempt stored in progress |
+  1474→
+  1475→---
+  1476→
+  1477→## 14. Projects & Capstone
+  1478→
+  1479→### 14.1 Project Timeline
+  1480→
+  1481→```
+  1482→MODULES:  1────10────20────30────40────50────60
+  1483→          │    │    │    │    │    │    │
+  1484→          ▼    ▼    ▼    ▼    ▼    ▼    ▼
+  1485→          🛠️  🎯   🏆   🎯   🏆   🎯   👑
+  1486→          P1   P1   LP1  P2   LP2  P3   CAPSTONE
+  1487→                    📗              📘
+  1488→                    Beginner        Intermediate
+  1489→                                     + Advanced
+  1490→```
+  1491→
+  1492→### 14.2 Project Specifications
+  1493→
+  1494→#### 🎯 Mini Projects (6)
+  1495→
+  1496→| # | Module | Project | Dataset | Tasks | Est. Time |
+  1497→|---|---|---|---|---|---|
+  1498→| P1 | M10 | Student Directory Queries | School | 5 | 20 min |
+  1499→| P2 | M30 | Sales Analytics | E-Commerce | 6 | 30 min |
+  1500→| P3 | M49 | Advanced Analytics (Windows+CTE) | Advanced | 6 | 40 min |
+  1501→| P4 | M40 | Order Management Queries | E-Commerce | 5 | 25 min |
+  1502→| P5 | M50 | Review System Analytics | Advanced | 5 | 30 min |
+  1503→| P6 | M59 | Performance Optimization | Advanced | 4 | 45 min |
+  1504→
+  1505→#### 🏆 Level Projects (3)
+  1506→
+  1507→| # | Module | Project | Dataset | Tasks | Est. Time |
+  1508→|---|---|---|---|---|---|
+  1509→| LP1 | M20 | School Report Generator | School | 8 | 45 min |
+  1510→| LP2 | M40 | E-Commerce Analytics | E-Commerce | 10 | 60 min |
+  1511→| LP3 | M60 | Dashboard Data Layer | Advanced | 8 | 75 min |
+  1512→
+  1513→#### 👑 Capstone (1)
+  1514→
+  1515→| # | Module | Project | Dataset | Tasks | Est. Time |
+  1516→|---|---|---|---|---|---|
+  1517→| CAP | M60 | Complete BI System | Advanced | 12 | 120 min |
+  1518→
+  1519→### 14.3 Project Task Structure
+  1520→
+  1521→```typescript
+  1522→interface ProjectTask {
+  1523→  id: string;
+  1524→  order: number;
+  1525→  businessContext: {
+  1526→    en: string;  // "The marketing team wants to understand customer distribution by city..."
+  1527→    hi: string;
+  1528→  };
+  1529→  taskDescription: {
+  1530→    en: string;  // "Write a query that shows..."
+  1531→    hi: string;
+  1532→  };
+  1533→  expectedOutput: {
+  1534→    columns: string[];
+  1535→    rows: (string | number | null)[][];
+  1536→  };
+  1537→  hints: Hint[];  // 3-level progressive
+  1538→  validation: ValidationConfig;
+  1539→  skillsTested: string[];  // ["JOIN", "GROUP BY", "ORDER BY"]
+  1540→  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
+  1541→}
+  1542→```
+  1543→
+  1544→### 14.4 Capstone Project: Business Intelligence System
+  1545→
+  1546→```yaml
+  1547→Project: Complete BI System
+  1548→Module: 60 (Final)
+  1549→Dataset: Full Advanced Database (10 tables)
+  1550→Total Tasks: 12
+  1551→Estimated Time: 120 minutes
+  1552→
+  1553→Tasks:
+  1554→  1. Customer Segmentation Analysis
+  1555→     - Use: CTE + Window Functions
+  1556→     - Output: Customer segments with purchase frequency and value
+  1557→
+  1558→  2. Sales Trend Analysis (Month-over-Month)
+  1559→     - Use: LAG/LEAD + Date functions
+  1560→     - Output: Monthly sales with growth percentage
+  1561→
+  1562→  3. Product Performance Ranking
+  1563→     - Use: RANK + JOIN + Aggregate
+  1564→     - Output: Products ranked by revenue with category
+  1565→
+  1566→  4. Customer Lifetime Value Calculation
+  1567→     - Use: Multiple CTEs + Aggregates
+  1568→     - Output: CLV per customer with segment
+  1569→
+  1570→  5. Inventory Movement Analysis
+  1571→     - Use: Running totals + Window functions
+  1572→     - Output: Stock levels over time per product
+  1573→
+  1574→  6. Top Customers per Category
+  1575→     - Use: Window function + PARTITION BY
+  1576→     - Output: Top 3 customers per product category
+  1577→
+  1578→  7. Churn Risk Identification
+  1579→     - Use: LEFT JOIN + Date calculations
+  1580→     - Output: Customers inactive for 90+ days
+  1581→
+  1582→  8. Revenue by Region Analysis
+  1583→     - Use: Multiple JOINs + GROUP BY
+  1584→     - Output: State-wise revenue with customer count
+  1585→
+  1586→  9. Automated Audit View
+  1587→     - Use: CREATE VIEW + Complex query
+  1588→     - Output: Reusable sales_summary view
+  1589→
+  1590→  10. Performance Index Creation
+  1591→      - Use: CREATE INDEX + EXPLAIN
+  1592→      - Output: Indexes on frequently queried columns
+  1593→
+  1594→  11. Trigger for Inventory Logging
+  1595→      - Use: CREATE TRIGGER
+  1596→      - Output: Auto-log inventory changes
+  1597→
+  1598→  12. Executive Dashboard Query Pack
+  1599→      - Use: Everything combined
+  1600→      - Output: 5 dashboard-ready queries
+  1601→```
+  1602→
+  1603→---
+  1604→
+  1605→## 15. UI/UX Design System
+  1606→
+  1607→### 15.1 Color Palette
+  1608→
+  1609→```yaml
+  1610→# Light Educational Theme — Coursera-Inspired
+  1611→
+  1612→Primary (Blue — Trust, Learning):
+  1613→  50:  "#EFF6FF"
+  1614→  100: "#DBEAFE"
+  1615→  200: "#BFDBFE"
+  1616→  300: "#93C5FD"
+  1617→  400: "#60A5FA"
+  1618→  500: "#3B82F6"  # Main actions, links
+  1619→  600: "#2563EB"  # Hover states
+  1620→  700: "#1D4ED8"  # Active states
+  1621→  800: "#1E40AF"
+  1622→  900: "#1E3A8A"
+  1623→
+  1624→Secondary (Green — Success, Completion):
+  1625→  50:  "#ECFDF5"
+  1626→  500: "#10B981"  # Success, correct answers
+  1627→  600: "#059669"
+  1628→  700: "#047857"
+  1629→
+  1630→Accent (Orange — Highlights, Warnings):
+  1631→  50:  "#FFF7ED"
+  1632→  500: "#F59E0B"  # Warning, hints
+  1633→  600: "#D97706"
+  1634→  700: "#B45309"
+  1635→
+  1636→Danger (Red — Errors, Delete):
+  1637→  50:  "#FEF2F2"
+  1638→  500: "#EF4444"  # Error states, wrong answers
+  1639→  600: "#DC2626"
+  1640→  700: "#B91C1C"
+  1641→
+  1642→Neutral (Gray — Text, Backgrounds):
+  1643→  50:  "#F8FAFC"  # Page background
+  1644→  100: "#F1F5F9"  # Card backgrounds
+  1645→  200: "#E2E8F0"  # Borders, dividers
+  1646→  300: "#CBD5E1"
+  1647→  400: "#94A3B8"
+  1648→  500: "#64748B"  # Muted text
+  1649→  600: "#475569"
+  1650→  700: "#334155"  # Secondary text
+  1651→  800: "#1E293B"
+  1652→  900: "#0F172A"  # Main text, headings
+  1653→```
+  1654→
+  1655→### 15.2 Typography
+  1656→
+  1657→```yaml
+  1658→Fonts:
+  1659→  Primary UI: "Inter" (400, 500, 600, 700)
+  1660→    - Body text, buttons, navigation
+  1661→    - Fallback: system-ui, -apple-system, sans-serif
+  1662→
+  1663→  Headings: "Poppins" (600, 700)
+  1664→    - Page titles, section headers
+  1665→    - Fallback: sans-serif
+  1666→
+  1667→  Code/SQL: "JetBrains Mono" (400, 500)
+  1668→    - Query editor, code blocks, results
+  1669→    - Fallback: "Fira Code", "Consolas", monospace
+  1670→
+  1671→Font Sizes (Tailwind Scale):
+  1672→  xs:    "0.75rem"   # 12px — captions, badges
+  1673→  sm:    "0.875rem"  # 14px — secondary text
+  1674→  base:  "1rem"      # 16px — body text
+  1675→  lg:    "1.125rem"  # 18px — emphasized text
+  1676→  xl:    "1.25rem"   # 20px — card titles
+  1677→  2xl:   "1.5rem"    # 24px — section headers
+  1678→  3xl:   "1.875rem"  # 30px — page titles
+  1679→  4xl:   "2.25rem"   # 36px — hero text
+  1680→```
+  1681→
+  1682→### 15.3 Spacing & Layout
+  1683→
+  1684→```yaml
+  1685→Spacing (Tailwind Default):
+  1686→  1:  "4px"
+  1687→  2:  "8px"
+  1688→  3:  "12px"
+  1689→  4:  "16px"   # Standard component padding
+  1690→  6:  "24px"   # Card padding
+  1691→  8:  "32px"   # Section spacing
+  1692→  12: "48px"   # Major section breaks
+  1693→  16: "64px"   # Page-level spacing
+  1694→
+  1695→Border Radius:
+  1696→  sm:   "6px"   # Small buttons, badges
+  1697→  md:   "10px"  # Buttons, inputs
+  1698→  lg:   "16px"  # Cards, panels
+  1699→  full: "9999px" # Pills, circular buttons
+  1700→
+  1701→Shadows:
+  1702→  sm: "0 1px 2px rgba(0,0,0,0.05)"
+  1703→  md: "0 4px 6px rgba(0,0,0,0.07)"
+  1704→  lg: "0 10px 15px rgba(0,0,0,0.1)"
+  1705→
+  1706→Max Content Width:
+  1707→  Reading content: "800px" (optimal line length)
+  1708→  Console: "1440px" (full workspace)
+  1709→  Landing page: "1200px"
+  1710→```
+  1711→
+  1712→### 15.4 Component States
+  1713→
+  1714→```yaml
+  1715→Button States:
+  1716→  Default: bg-primary-500, text-white
+  1717→  Hover: bg-primary-600, translateY(-1px), shadow-md
+  1718→  Active: bg-primary-700, translateY(0)
+  1719→  Disabled: bg-neutral-200, text-neutral-400, cursor-not-allowed
+  1720→  Focus: outline-2, outline-primary-500, outline-offset-2
+  1721→
+  1722→Card States:
+  1723→  Default: bg-white, border-neutral-200, shadow-sm
+  1724→  Hover: border-primary-300, shadow-md
+  1725→  Selected: border-primary-500, ring-1, ring-primary-200
+  1726→
+  1727→Input States:
+  1728→  Default: bg-white, border-neutral-300
+  1729→  Focus: border-primary-500, ring-2, ring-primary-200
+  1730→  Error: border-danger-500, ring-2, ring-danger-200
+  1731→
+  1732→Module Status Colors:
+  1733→  Completed: bg-success-50, border-success-500, icon-check
+  1734→  Current: bg-primary-50, border-primary-500, icon-play
+  1735→  Locked: bg-neutral-50, border-neutral-200, icon-lock
+  1736→```
+  1737→
+  1738→---
+  1739→
+  1740→## 16. Navigation & Page Structure
+  1741→
+  1742→### 16.1 Top Navigation Bar
+  1743→
+  1744→```
+  1745→┌─────────────────────────────────────────────────────────────┐
+  1746→│  🎓 SQL Learn    [📚 Modules ▾]  [🔍 Search]  [EN|HI] [⚙️]  │
+  1747→│                                    ┌─────────┐              │
+  1748→│                                    │ 23% ▓▓░ │ Progress     │
+  1749→└────────────────────────────────────┴─────────┴──────────────┘
+  1750→```
+  1751→
+  1752→### 16.2 Modules Dropdown
+  1753→
+  1754→```
+  1755→[📚 Modules ▾] Click →
+  1756→┌─────────────────────────────────────┐
+  1757→│ 🟢 BEGINNER (8/20 completed)       │
+  1758→│ ├── M1: Intro to SQL         ✅    │
+  1759→│ ├── M2: SELECT Basics        ✅    │
+  1760→│ ├── M3: WHERE Clause         ✅    │
+  1761→│ ├── ...                            │
+  1762→│ ├── M10: Mini Project 1      🔒    │
+  1763→│ └── M20: Level Project       🔒    │
+  1764→│                                     │
+  1765→│ 🟡 INTERMEDIATE (0/20)  🔒 LOCKED  │
+  1766→│ Complete Beginner to unlock        │
+  1767→│                                     │
+  1768→│ 🔴 ADVANCED (0/20)       🔒 LOCKED │
+  1769→│ Complete Intermediate to unlock    │
+  1770→│                                     │
+  1771→│ 🧪 Sandbox                          │
+  1772→│ 📊 My Projects                      │
+  1773→└─────────────────────────────────────┘
+  1774→```
+  1775→
+  1776→### 16.3 Page Structure
+  1777→
+  1778→```
+  1779→ROUTES:
+  1780→
+  1781→/                     → Landing Page (new users) / Dashboard (returning)
+  1782→/dashboard            → User progress overview
+  1783→/module/:id           → Module page (theory/quiz/console tabs)
+  1784→/module/:id/quiz      → Quiz section
+  1785→/module/:id/console   → Practice console
+  1786→/projects             → All projects list
+  1787→/project/:id          → Individual project
+  1788→/search               → Search & filter page
+  1789→/sandbox              → Free practice sandbox
+  1790→/settings             → Language, backup, reset progress
+  1791→```
+  1792→
+  1793→### 16.4 Module Page Tabs
+  1794→
+  1795→```
+  1796→┌─────────────────────────────────────────────────┐
+  1797→│  Module 32: LEFT JOIN                           │
+  1798→│  Level: Intermediate | Est: 25 min              │
+  1799→├─────────────────────────────────────────────────┤
+  1800→│  [📖 Theory] [📝 Quiz] [⌨ Practice] [✅ Done]  │
+  1801→├─────────────────────────────────────────────────┤
+  1802→│                                                 │
+  1803→│              (Active Tab Content)               │
+  1804→│                                                 │
+  1805→│  Theory:    Full theory + animated tutorial     │
+  1806→│  Quiz:      4 questions, instant feedback       │
+  1807→│  Practice:  3-panel console with 5 tasks        │
+  1808→│  Done:      Completion status + next module     │
+  1809→│                                                 │
+  1810→├─────────────────────────────────────────────────┤
+  1811→│  ← Previous Module    [🏠 Home]    Next Module →│
+  1812→└─────────────────────────────────────────────────┘
+  1813→```
+  1814→
+  1815→---
+  1816→
+  1817→## 17. Language System
+  1818→
+  1819→### 17.1 Toggle Behavior
+  1820→
+  1821→```
+  1822→LANGUAGE TOGGLE:
+  1823→
+  1824→Header: [🇬🇧 EN] [🇮🇳 HI]
+  1825→
+  1826→Click EN → All content in English
+  1827→Click HI → All content in Hinglish (Roman Hindi)
+  1828→
+  1829→PREFERENCE:
+  1830→├── Saved to localStorage
+  1831→├── Default: Browser language detection
+  1832→│   ├── navigator.language starts with 'hi' → HI
+  1833→│   └── Otherwise → EN
+  1834→└── Toggle is instant (no page reload)
+  1835→```
+  1836→
+  1837→### 17.2 Content Localization Structure
+  1838→
+  1839→```typescript
+  1840→// Every content string has both languages
+  1841→interface LocalizedString {
+  1842→  en: string;  // English version
+  1843→  hi: string;  // Hinglish version (Roman script)
+  1844→}
+  1845→
+  1846→// Example Module Content
+  1847→const moduleContent = {
+  1848→  title: {
+  1849→    en: "LEFT JOIN",
+  1850→    hi: "LEFT JOIN (Samajhna)"  // Technical terms in English
+  1851→  },
+  1852→  theory: {
+  1853→    en: "LEFT JOIN returns all rows from the left table, and matching rows from the right table. If there's no match, the right table's columns will contain NULL.",
+  1854→    hi: "LEFT JOIN left table ke saare rows return karta hai, aur right table se matching rows. Agar match nahi milta, to right table ke columns me NULL hota hai."
+  1855→  }
+  1856→};
+  1857→
+  1858→// Queries ALWAYS in English (industry standard)
+  1859→// Only explanations toggle
+  1860→```
+  1861→
+  1862→### 17.3 Translation Coverage
+  1863→
+  1864→| Content Type | Translated | Notes |
+  1865→|---|---|---|
+  1866→| UI Labels (buttons, nav) | ✅ Both | Full translation |
+  1867→| Theory explanations | ✅ Both | Full translation |
+  1868→| Task descriptions | ✅ Both | Business context translated |
+  1869→| Hints (3 levels) | ✅ Both | Full translation |
+  1870→| Quiz questions & options | ✅ Both | Full translation |
+  1871→| Error messages (friendly) | ✅ Both | Technical errors in English only |
+  1872→| **SQL Queries** | ❌ English only | Industry standard |
+  1873→| **Column/Table names** | ❌ English only | Database standard |
+  1874→| Code comments | ✅ Both | Comments translated |
+  1875→
+  1876→---
+  1877→
+  1878→## 18. Progress Tracking System
+  1879→
+  1880→### 18.1 localStorage Schema
+  1881→
+  1882→```json
+  1883→{
+  1884→  "sqlLearnProgress": {
+  1885→    "version": "1.0",
+  1886→    "lastAccessed": "2025-01-15T10:30:00Z",
+  1887→    "language": "en",
+  1888→    "currentLevel": "beginner",
+  1889→    "modules": {
+  1890→      "module-01": {
+  1891→        "status": "completed",
+  1892→        "theoryRead": true,
+  1893→        "tasksCompleted": ["task-1", "task-2", "task-3", "task-4", "task-5"],
+  1894→        "tasksSkipped": [],
+  1895→        "quizBestScore": 100,
+  1896→        "quizAttempts": 2,
+  1897→        "hintsUsed": {
+  1898→          "task-1": 0,
+  1899→          "task-2": 1,
+  1900→          "task-3": 0
+  1901→        },
+  1902→        "completedAt": "2025-01-10T15:20:00Z"
+  1903→      },
+  1904→      "module-02": {
+  1905→        "status": "in-progress",
+  1906→        "theoryRead": true,
+  1907→        "tasksCompleted": ["task-1", "task-2"],
+  1908→        "quizBestScore": null,
+  1909→        "quizAttempts": 0
+  1910→      }
+  1911→    },
+  1912→    "projects": {
+  1913→      "project-01": {
+  1914→        "status": "in-progress",
+  1915→        "tasksCompleted": ["task-1", "task-2"]
+  1916→      }
+  1917→    },
+  1918→    "unlockedModules": ["module-01", "module-02", "module-03"],
+  1919→    "lastModule": "module-02",
+  1920→    "stats": {
+  1921→      "totalQueriesRun": 147,
+  1922→      "totalTasksCompleted": 12,
+  1923→      "totalHintsUsed": 5,
+  1924→      "timeSpent": 4500
+  1925→    }
+  1926→  }
+  1927→}
+  1928→```
+  1929→
+  1930→### 18.2 Progress Calculation
+  1931→
+  1932→```typescript
+  1933→function calculateProgress(progress: ProgressState): ProgressSummary {
+  1934→  const completedModules = Object.values(progress.modules)
+  1935→    .filter(m => m.status === 'completed').length;
+  1936→
+  1937→  const totalTasks = countAllTasks(); // 300
+  1938→  const completedTasks = Object.values(progress.modules)
+  1939→    .reduce((sum, m) => sum + m.tasksCompleted.length, 0);
+  1940→
+  1941→  return {
+  1942→    overallPercent: (completedModules / 60) * 100,
+  1943→    levelProgress: {
+  1944→      beginner: countCompleted('beginner') / 20,
+  1945→      intermediate: countCompleted('intermediate') / 20,
+  1946→      advanced: countCompleted('advanced') / 20
+  1947→    },
+  1948→    tasksCompleted: `${completedTasks}/${totalTasks}`,
+  1949→    projectsCompleted: countCompletedProjects() / 10
+  1950→  };
+  1951→}
+  1952→```
+  1953→
+  1954→### 18.3 Module Unlock Logic
+  1955→
+  1956→```typescript
+  1957→function isModuleUnlocked(moduleId: string, progress: ProgressState): boolean {
+  1958→  const module = getModuleById(moduleId);
+  1959→
+  1960→  // Module 1 always unlocked
+  1961→  if (module.number === 1) return true;
+  1962→
+  1963→  // Previous module must be complete
+  1964→  const prevModule = getModuleById(`module-${module.number - 1}`);
+  1965→  const prevProgress = progress.modules[prevModule.id];
+  1966→
+  1967→  if (!prevProgress || prevProgress.status !== 'completed') {
+  1968→    return false;
+  1969→  }
+  1970→
+  1971→  // Level boundary check
+  1972→  // Module 21 (Intermediate start) requires ALL beginner modules complete
+  1973→  if (module.number === 21) {
+  1974→    return areAllModulesCompleted('beginner', progress);
+  1975→  }
+  1976→  if (module.number === 41) {
+  1977→    return areAllModulesCompleted('intermediate', progress);
+  1978→  }
+  1979→
+  1980→  return true;
+  1981→}
+  1982→```
+  1983→
+  1984→### 18.4 Backup & Export
+  1985→
+  1986→```
+  1987→SETTINGS PAGE → Backup Section:
+  1988→
+  1989→┌─────────────────────────────────────────────┐
+  1990→│ 💾 Progress Backup                         │
+  1991→├─────────────────────────────────────────────┤
+  1992→│                                             │
+  1993→│ [📋 Copy Backup Code]                      │
+  1994→│   ↓ Copies JSON to clipboard              │
+  1995→│                                             │
+  1996→│ [📥 Download Backup File]                 │
+  1997→│   ↓ Downloads .json file                  │
+  1998→│                                             │
+  1999→│ [📤 Import Progress]                       │
+  2000→│   ↓ Paste backup code or upload file      │
+
+[showing lines 1-2000 of 3359; use offset=2001 with limit to continue reading]
