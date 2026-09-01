@@ -35,7 +35,7 @@ export const modules: Module[] = [
           ['Write one statement per request', 'Har request ke liye ek statement'],
           ['Validate by result matching — multiple correct answers exist', 'Result matching se validate karo — kai sahi jawab possible hain'],
         ],
-        []
+        'select-flow'
       ),
       section(
         ['A worked example of the method', 'Method ka ek worked example'],

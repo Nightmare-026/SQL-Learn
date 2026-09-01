@@ -48,7 +48,7 @@ export function QuizTab({ module, onScore }: { module: Module; onScore: (scorePc
     return (
       <div className="max-w-xl mx-auto text-center py-12 px-4">
         <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
-        <h3 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('quiz.intro.title')} — {module.title.en}</h3>
+        <h3 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('quiz.intro.title')} — {module.title[useProgressStore.getState().language]}</h3>
         <p className="text-sm text-neutral-600 mb-6">{t('quiz.intro.desc')}</p>
         <button
           onClick={() => setPhase('q')}
@@ -76,7 +76,7 @@ export function QuizTab({ module, onScore }: { module: Module; onScore: (scorePc
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div>
       <div className="flex items-center justify-between mb-4 text-xs text-neutral-500">
         <span>{t('quiz.question')} {qIdx + 1} {t('quiz.of')} {questions.length}</span>
         <div className="flex gap-1">
@@ -149,11 +149,12 @@ function MCQ({ q, answered, wasRight, onAnswer, lang }: any) {
 
 // ---------- Output prediction ----------
 function OutputPrediction({ q, answered, wasRight, onAnswer, lang }: any) {
+  const t = useT();
   const [picked, setPicked] = useState<string | null>(null);
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-5">
       <p className="text-sm font-semibold text-neutral-800 mb-1">{q.question[lang]}</p>
-      <p className="text-[11px] text-neutral-500 mb-3">{t0('query')}</p>
+      <p className="text-[11px] text-neutral-500 mb-3">{t('quiz.query')}</p>
       <SQLChip code={q.queryShown} />
       <div className="mt-4 space-y-2">
         {q.options.map((opt: any) => {
@@ -189,6 +190,7 @@ function OutputPrediction({ q, answered, wasRight, onAnswer, lang }: any) {
 
 // ---------- Query building (click words) ----------
 function QueryBuilding({ q, answered, wasRight, onAnswer, lang }: any) {
+  const t = useT();
   const [seq, setSeq] = useState<string[]>([]);
   const shuffled = useMemo(() => shuffle(q.wordBank), [q.wordBank]);
   const remaining = useMemo(() => {
@@ -208,7 +210,7 @@ function QueryBuilding({ q, answered, wasRight, onAnswer, lang }: any) {
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-5">
       <p className="text-sm font-semibold text-neutral-800 mb-1">{q.description[lang]}</p>
-      <p className="text-[11px] text-neutral-500 mb-3">{t0('quiz.build.desc')}</p>
+      <p className="text-[11px] text-neutral-500 mb-3">{t('quiz.build.desc')}</p>
       <div className="min-h-[44px] rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/30 p-2 flex flex-wrap gap-1.5 mb-3">
         {seq.map((w, i) => (
           <button key={`${w}-${i}`} disabled={answered} onClick={() => setSeq(seq.filter((_, j) => j !== i))} className="rounded-md bg-brand-600 text-white px-2.5 py-1 text-xs font-semibold sql-code hover:bg-brand-700 transition">
@@ -225,16 +227,16 @@ function QueryBuilding({ q, answered, wasRight, onAnswer, lang }: any) {
         ))}
       </div>
       <div className="flex gap-2">
-        <button onClick={() => setSeq([])} disabled={answered} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-600 hover:border-neutral-400 transition">{t0('quiz.build.reset')}</button>
+        <button onClick={() => setSeq([])} disabled={answered} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-600 hover:border-neutral-400 transition">{t('quiz.build.reset')}</button>
         {!answered && (
           <button onClick={check} disabled={seq.length === 0} className="rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-40 transition">
-            {t0('quiz.check')}
+            {t('quiz.check')}
           </button>
         )}
       </div>
       {answered && (
         <div className="mt-4">
-          <div className="rounded-lg bg-neutral-900 p-3 mb-3">
+          <div className="rounded-lg bg-neutral-900 sql-dark p-3 mb-3">
             <SQLChip code={q.correctSequence.join(' ')} />
           </div>
           <Feedback right={wasRight} explanation={q.explanation[lang]} />
@@ -246,6 +248,7 @@ function QueryBuilding({ q, answered, wasRight, onAnswer, lang }: any) {
 
 // ---------- Fill blanks ----------
 function FillBlanks({ q, answered, wasRight, onAnswer, lang }: any) {
+  const t = useT();
   const [choices, setChoices] = useState<(string | null)[]>(q.blanks.map(() => null));
   // split template by ___
   const parts = q.template.split('___');
@@ -286,8 +289,8 @@ function FillBlanks({ q, answered, wasRight, onAnswer, lang }: any) {
   const allFilled = choices.every((c) => c !== null);
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-5">
-      <p className="text-xs text-neutral-500 mb-3 font-semibold uppercase tracking-wide">{t0('quiz.blanks')}</p>
-      <div className="rounded-xl bg-neutral-900 p-4 text-neutral-100 text-sm leading-relaxed mb-4">{renderTemplate()}</div>
+      <p className="text-xs text-neutral-500 mb-3 font-semibold uppercase tracking-wide">{t('quiz.blanks')}</p>
+      <div className="rounded-xl bg-neutral-900 sql-dark p-4 text-neutral-100 text-sm leading-relaxed mb-4">{renderTemplate()}</div>
       {!answered && (
         <button
           onClick={() => {
@@ -297,7 +300,7 @@ function FillBlanks({ q, answered, wasRight, onAnswer, lang }: any) {
           disabled={!allFilled}
           className="rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-40 transition"
         >
-          {t0('quiz.check')}
+          {t('quiz.check')}
         </button>
       )}
       {answered && <Feedback right={wasRight} explanation={q.explanation[lang]} />}
@@ -316,18 +319,6 @@ function Feedback({ right, explanation }: { right: boolean; explanation: string 
       <p className="text-xs text-neutral-700 leading-relaxed"><b>{t('quiz.explanation')}:</b> {explanation}</p>
     </div>
   );
-}
-
-function t0(key: string) {
-  // lightweight static labels for nested components
-  const map: Record<string, string> = {
-    query: 'Query',
-    'quiz.build.desc': 'Click words in the correct order to build the query',
-    'quiz.build.reset': 'Reset',
-    'quiz.check': 'Check answer',
-    'quiz.blanks': 'Fill in the blanks',
-  };
-  return map[key] ?? key;
 }
 
 function shuffle<T>(arr: T[]): T[] {

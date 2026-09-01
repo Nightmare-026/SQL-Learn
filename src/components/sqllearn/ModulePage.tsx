@@ -2,8 +2,8 @@
 
 // ============ Module page: Theory / Quiz / Practice / Summary (spec §16.4) ============
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ClipboardList, Terminal, CheckCircle2, Lock, ArrowLeft, ArrowRight, Home, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { BookOpen, ClipboardList, Terminal, CheckCircle2, Lock, ArrowLeft, ArrowRight, Home, ChevronDown, AlertTriangle, RotateCw, BadgeCheck, ArrowDown } from 'lucide-react';
 import type { Module } from '@/types/content';
 import { loadModule } from '@/lib/content/registry';
 import { MODULE_INDEX, levelOfModule } from '@/lib/content/registry';
@@ -11,16 +11,17 @@ import { useProgressStore } from '@/lib/progress/store';
 import { useLang, useT } from '@/lib/i18n/store';
 import { AnimatedTutorial } from '@/components/sqllearn/AnimatedTutorial';
 import { QuizTab } from '@/components/sqllearn/QuizTab';
-import { PracticeConsole } from '@/components/sqllearn/PracticeConsole';
 import { Diagram } from '@/components/sqllearn/Diagram';
 import { SQLCode, SQLChip } from '@/components/sqllearn/SQLDisplay';
 import { LEVEL_META } from '@/lib/content/registry';
 import { isModuleUnlocked } from '@/lib/progress/unlock';
+import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/LazyPracticeConsole';
 
 export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number; onNavigate: (route: string) => void }) {
   const t = useT();
   const lang = useLang();
   const [module, setModule] = useState<Module | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [tab, setTab] = useState<'theory' | 'quiz' | 'practice' | 'summary'>('theory');
   const [practiceTask, setPracticeTask] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -36,16 +37,22 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   useEffect(() => {
     setMounted(true);
     let alive = true;
-    loadModule(moduleNumber).then((m) => {
-      if (!alive) return;
-      setModule(m);
-      setTab('theory');
-      // start at the first unpassed task (moduleNumber captured at effect start)
-      const prog = useProgressStore.getState().modules[m.id];
-      const doneIds = new Set(prog?.tasksCompleted ?? []);
-      const firstOpenIdx = m.tasks.findIndex((tsk) => !doneIds.has(tsk.id));
-      setPracticeTask(firstOpenIdx === -1 ? 0 : firstOpenIdx);
-    });
+    setLoadError(false);
+    setModule(null);
+    loadModule(moduleNumber)
+      .then((m) => {
+        if (!alive) return;
+        setModule(m);
+        setTab('theory');
+        // start at the first unpassed task (moduleNumber captured at effect start)
+        const prog = useProgressStore.getState().modules[m.id];
+        const doneIds = new Set(prog?.tasksCompleted ?? []);
+        const firstOpenIdx = m.tasks.findIndex((tsk) => !doneIds.has(tsk.id));
+        setPracticeTask(firstOpenIdx === -1 ? 0 : firstOpenIdx);
+      })
+      .catch(() => {
+        if (alive) setLoadError(true);
+      });
     touch();
     setLastModule(`module-${String(moduleNumber).padStart(2, '0')}`);
     return () => { alive = false; };
@@ -54,12 +61,33 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   const entry = MODULE_INDEX[moduleNumber];
   const levelMeta = LEVEL_META[levelOfModule(moduleNumber)];
 
+  const retryLoad = () => {
+    setLoadError(false);
+    loadModule(moduleNumber)
+      .then((m) => { setModule(m); setTab('theory'); })
+      .catch(() => setLoadError(true));
+  };
+
   if (!mounted) return null;
+  if (loadError) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-danger-50 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-7 h-7 text-danger-500" />
+        </div>
+        <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('error.moduleLoad.title')}</h2>
+        <p className="text-sm text-neutral-600 mb-6">{t('error.moduleLoad.desc')}</p>
+        <button onClick={retryLoad} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">
+          <RotateCw className="w-4 h-4" /> {t('common.retry')}
+        </button>
+      </div>
+    );
+  }
   if (!module) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-24 text-center text-neutral-500">
         <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm">Loading module…</p>
+        <p className="text-sm">{t('common.loading')}</p>
       </div>
     );
   }
@@ -106,7 +134,8 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
         <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500">
           <span>⏱ {entry.estimatedTime}</span>
           <span>⌨ {entry.taskCount} {t('stats.tasks').toLowerCase()}</span>
-          <span>📝 4 quiz</span>
+          <span>📝 {module.quiz.length} {t('module.quizCount')}</span>
+          <span className="inline-flex items-center gap-1 text-success-700"><BadgeCheck className="w-3.5 h-3.5" />{t('theory.verified')}</span>
         </div>
       </div>
 
@@ -141,7 +170,8 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
             <b>⚠ {t('mobile.warn.title')}</b> — {t('mobile.warn.desc')}
           </div>
           <div className="h-full rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
-            <PracticeConsole
+            <ConsoleSuspense label={t('common.loading')}>
+              <LazyPracticeConsole
               dataset={module.dataset}
               driver={{
                 tasks: module.tasks,
@@ -164,6 +194,7 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
               }}
               onQueryRun={() => bumpStats({ totalQueriesRun: 1 })}
             />
+            </ConsoleSuspense>
           </div>
         </div>
       )}
@@ -201,8 +232,10 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
     useProgressStore.getState().markTaskSkipped(moduleId, taskId);
   }
   function recordHints(moduleId: string, taskId: string, count: number) {
+    // `count` is the task's new hint total; only the newly revealed hint counts.
+    const prev = useProgressStore.getState().modules[moduleId]?.hintsUsed?.[taskId] ?? 0;
     useProgressStore.getState().recordHints(moduleId, taskId, count);
-    useProgressStore.getState().bumpStats({ totalHintsUsed: count });
+    useProgressStore.getState().bumpStats({ totalHintsUsed: Math.max(0, count - prev) });
   }
 }
 
@@ -210,98 +243,216 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
 function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead: boolean; onRead: () => void }) {
   const lang = useLang();
   const t = useT();
+  const { resumeY, goToResume } = useResumeReading(module.id);
+
   return (
-    <div className="space-y-6">
+    <div>
       <AnimatedTutorial module={module} />
 
-      {/* objectives */}
-      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2">🎯 {t('theory.objectives')}</h4>
-        <ul className="space-y-1">
-          {module.learningObjectives[lang].map((o, i) => (
-            <li key={i} className="text-sm text-neutral-700 flex gap-2"><span className="text-brand-500">▸</span>{o}</li>
-          ))}
-        </ul>
-      </div>
+      {/* Lesson content — spans the full page container, same width as header/tabs/practice */}
+      <div>
 
-      {/* theory sections */}
-      {module.theory.map((sec, i) => (
-        <section key={i} className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-5">
-          <h3 className="font-heading font-bold text-lg text-neutral-800 mb-3">{sec.heading[lang]}</h3>
-          {sec.paragraphs[lang].map((p, j) => (
-            <p key={j} className="text-sm text-neutral-700 leading-relaxed mb-3 last:mb-0">{p}</p>
-          ))}
-          {sec.bullets && (
-            <ul className="mt-3 space-y-1.5">
-              {sec.bullets[lang].map((b, j) => (
-                <li key={j} className="text-sm text-neutral-600 flex gap-2"><span className="text-success-500">✓</span>{b}</li>
+        {/* Lesson intro — "What you'll learn" callout */}
+        <Reveal>
+          <div id={`${module.id}-obj`} className="scroll-mt-20 mt-6 rounded-xl bg-neutral-100/90 p-5">
+            <h4 className="text-[13px] font-bold text-neutral-800 mb-2.5">🎯 {t('theory.objectives')}</h4>
+            <ul className={`grid gap-x-10 gap-y-1.5 ${module.learningObjectives[lang].length > 1 ? 'sm:grid-cols-2' : ''}`}>
+              {module.learningObjectives[lang].map((o, i) => (
+                <li key={i} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
+                  <span className="text-brand-600 shrink-0 mt-0.5">▸</span>{o}
+                </li>
               ))}
             </ul>
-          )}
-          {sec.diagram && <Diagram kind={sec.diagram} />}
-        </section>
-      ))}
-
-      {/* syntax */}
-      <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 py-2.5 bg-neutral-50 border-b border-neutral-200 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('theory.syntax')}</div>
-        <div className="p-4">
-          <SQLCode code={module.syntax.template} />
-          <div className="mt-3 grid gap-2">
-            {module.syntax.parts.map((p, i) => (
-              <div key={i} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 text-sm">
-                <code className={`sql-code font-bold shrink-0 ${i % 2 ? 'text-purple-700' : 'text-blue-700'}`}>{p.part}</code>
-                <span className="text-neutral-600 text-xs sm:text-sm">{p.description[lang]}</span>
-              </div>
-            ))}
           </div>
-        </div>
-      </section>
+        </Reveal>
 
-      {/* examples */}
-      <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 py-2.5 bg-neutral-50 border-b border-neutral-200 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('theory.examples')}</div>
-        <div className="divide-y divide-neutral-100">
-          {module.examples.map((ex, i) => (
-            <ExampleRow key={i} query={ex.query} explanation={ex.explanation[lang]} tag={ex.tag} />
-          ))}
-        </div>
-      </section>
+        {/* Theory sections — flat editorial prose, numbered H2 */}
+        {module.theory.map((sec, i) => (
+          <Reveal key={i}>
+            <section id={`${module.id}-sec-${i}`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200 first:border-t-0">
+              <div className="flex items-baseline gap-3 mb-4">
+                <span className="font-heading font-bold text-brand-600 text-lg tabular-nums shrink-0">{i + 1}.</span>
+                <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900 flex-1 min-w-0">{sec.heading[lang]}</h2>
+                <span className="text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums hidden sm:inline">~{estimateSectionMinutes(sec, lang)} {t('theory.minRead')}</span>
+              </div>
+              <div className="space-y-4 max-w-3xl">
+                {sec.paragraphs[lang].map((p, j) => (
+                  <p key={j} className="text-[15px] leading-7 text-neutral-800">{p}</p>
+                ))}
+              </div>
+              {sec.bullets && (
+                <div className="mt-5 rounded-xl bg-neutral-100/90 p-5">
+                  <div className="text-[13px] font-bold text-neutral-800 mb-2.5">✓ {t('theory.keyPoints')}</div>
+                  <ul className={`grid gap-x-10 gap-y-1.5 ${sec.bullets[lang].length > 1 ? 'sm:grid-cols-2' : ''}`}>
+                    {sec.bullets[lang].map((b, j) => (
+                      <li key={j} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
+                        <span className="text-success-600 shrink-0 mt-0.5">✓</span>{b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sec.diagram && (
+                <div className="mt-5 rounded-xl border border-neutral-200 overflow-x-auto custom-scroll">
+                  <Diagram kind={sec.diagram} />
+                </div>
+              )}
+            </section>
+          </Reveal>
+        ))}
 
-      {/* mistakes */}
-      <section className="rounded-2xl border border-warning-200 bg-warning-50/50 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-warning-200 text-xs font-bold uppercase tracking-wide text-warning-700">⚠ {t('theory.mistakes')}</div>
-        <div className="divide-y divide-warning-100">
-          {module.commonMistakes.map((m, i) => (
-            <div key={i} className="p-4 grid md:grid-cols-2 gap-3">
-              <div>
-                <div className="text-[10px] font-bold uppercase text-danger-600 mb-1">✗ {t('theory.mistake')}</div>
-                <p className="text-sm text-neutral-700 leading-relaxed">{m.mistake[lang]}</p>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold uppercase text-success-600 mb-1">✓ {t('theory.fix')}</div>
-                <p className="text-sm text-neutral-700 leading-relaxed">{m.correction[lang]}</p>
-              </div>
+        {/* Syntax — dark code block + parts */}
+        <Reveal>
+          <section id={`${module.id}-syntax`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">⌨</span>
+              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.syntax')}</h2>
             </div>
-          ))}
-        </div>
-      </section>
+            <SQLCode code={module.syntax.template} />
+            <div className="mt-4 grid gap-2.5">
+              {module.syntax.parts.map((p, i) => (
+                <div key={i} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                  <code className={`sql-code font-bold shrink-0 ${i % 2 ? 'text-purple-700' : 'text-blue-700'}`}>{p.part}</code>
+                  <span className="text-[14px] text-neutral-700 leading-relaxed">{p.description[lang]}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </Reveal>
 
-      {/* mark read */}
-      <div className="flex justify-center pb-2">
-        <button
-          onClick={onRead}
-          disabled={theoryRead}
-          className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition inline-flex items-center gap-2 ${
-            theoryRead ? 'bg-success-50 text-success-700 border border-success-300' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
-          }`}
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          {theoryRead ? t('module.theoryReadDone') : t('module.theoryRead')}
-        </button>
+        {/* Examples */}
+        <Reveal>
+          <section id={`${module.id}-examples`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">💡</span>
+              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.examples')}</h2>
+            </div>
+            <div className="divide-y divide-neutral-200 border-y border-neutral-200">
+              {module.examples.map((ex, i) => (
+                <ExampleRow key={i} query={ex.query} explanation={ex.explanation[lang]} tag={ex.tag} />
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* Common mistakes — amber editorial callout */}
+        <Reveal>
+          <section id={`${module.id}-mistakes`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="font-heading font-bold text-warning-600 text-lg shrink-0">⚠</span>
+              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.mistakes')}</h2>
+            </div>
+            <div className="space-y-4">
+              {module.commonMistakes.map((m, i) => (
+                <div key={i} className="rounded-xl border-l-4 border-warning-400 bg-warning-50/60 p-4 grid md:grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-danger-600 mb-1">✗ {t('theory.mistake')}</div>
+                    <p className="text-[14px] text-neutral-700 leading-relaxed">{m.mistake[lang]}</p>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-success-600 mb-1">✓ {t('theory.fix')}</div>
+                    <p className="text-[14px] text-neutral-700 leading-relaxed">{m.correction[lang]}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* mark read */}
+        <div className="flex justify-center py-8">
+          <button
+            onClick={onRead}
+            disabled={theoryRead}
+            className={`rounded-xl px-6 py-3 text-sm font-semibold transition inline-flex items-center gap-2 ${
+              theoryRead ? 'bg-success-50 text-success-700 border border-success-300' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-md'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {theoryRead ? t('module.theoryReadDone') : t('module.theoryRead')}
+          </button>
+        </div>
       </div>
+
+      {/* resume reading pill */}
+      {resumeY !== null && (
+        <button
+          onClick={goToResume}
+          className="fixed bottom-6 right-4 sm:right-6 z-40 inline-flex items-center gap-2 rounded-full bg-neutral-900/90 backdrop-blur text-white px-4 py-2.5 text-xs font-semibold shadow-lg hover:bg-neutral-800 transition"
+        >
+          <ArrowDown className="w-3.5 h-3.5" />
+          {t('theory.resume')}
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+        </button>
+      )}
     </div>
   );
+}
+
+function useResumeReading(moduleId: string) {
+  // Lazy init from sessionStorage (client-only render — parent gates on `mounted`),
+  // so no synchronous setState is needed inside an effect.
+  const [resumeY, setResumeY] = useState<number | null>(() => {
+    try {
+      const saved = Number(sessionStorage.getItem(`theory-scroll:${moduleId}`) ?? '0');
+      return saved > 600 ? saved : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        try { sessionStorage.setItem(`theory-scroll:${moduleId}`, String(window.scrollY)); } catch { /* ignore */ }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+  }, [moduleId]);
+  // auto-dismiss the pill after 10s so it never lingers
+  useEffect(() => {
+    if (resumeY === null) return;
+    const timer = setTimeout(() => setResumeY(null), 10000);
+    return () => clearTimeout(timer);
+  }, [resumeY]);
+  const goToResume = () => {
+    if (resumeY === null) return;
+    setResumeY(null);
+    window.scrollTo({ top: resumeY, behavior: 'smooth' });
+  };
+  return { resumeY, goToResume };
+}
+
+// Evaluated at client-bundle load; falls back to false during SSR/prerender.
+const PREFERS_REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Subtle scroll-reveal (respects prefers-reduced-motion; content visible even if IO is unavailable). */
+function Reveal({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const skip = PREFERS_REDUCED_MOTION || typeof IntersectionObserver === 'undefined';
+  const [shown, setShown] = useState(skip);
+  useEffect(() => {
+    if (shown) return;
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setShown(true); io.disconnect(); }
+    }, { rootMargin: '0px 0px -32px 0px', threshold: 0.03 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shown]);
+  return (
+    <div ref={ref} style={{ willChange: 'opacity, transform' }} className={`transition-[opacity,transform] duration-500 ease-out ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+      {children}
+    </div>
+  );
+}
+
+function estimateSectionMinutes(sec: Module['theory'][number], lang: 'en' | 'hi'): number {
+  const words =
+    sec.paragraphs[lang].join(' ').split(/\s+/).filter(Boolean).length +
+    (sec.bullets?.[lang] ?? []).join(' ').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 180));
 }
 
 function ExampleRow({ query, explanation, tag }: { query: string; explanation: string; tag: string }) {
@@ -334,23 +485,42 @@ function SummaryTab({ module, onNavigate, nextUnlocked }: { module: Module; onNa
   const completed = mp?.status === 'completed';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 py-4">
+    <div className="space-y-6">
+      {completed && <Confetti onceKey={`celebrated:${module.id}`} />}
       <div className="text-center">
         <div className="text-4xl mb-2">{completed ? '🏆' : '🧭'}</div>
         <h2 className="font-heading text-xl font-bold text-neutral-800">{completed ? t('summary.completed') : t('summary.title')}</h2>
-        <p className="text-sm text-neutral-500 mt-1">{completed ? '' : t('summary.notYet')}</p>
+        {completed ? (
+          <div className="mt-3 mx-auto max-w-md rounded-2xl bg-gradient-to-r from-brand-50 via-success-50 to-brand-50 border border-success-200 px-5 py-3">
+            <p className="font-heading font-bold text-success-700">🎉 {t('summary.celebrate')}</p>
+            <p className="text-xs text-neutral-600 mt-0.5">{t('summary.celebrateSub')}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-500 mt-1">{t('summary.notYet')}</p>
+        )}
       </div>
 
-      {/* checklist */}
-      <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm divide-y divide-neutral-100">
-        <div className="px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('summary.checklist')}</div>
-        <div className="flex items-center gap-3 p-4">
-          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${tasksOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{tasksOk ? '✓' : '○'}</span>
-          <span className="text-sm text-neutral-700">{t('summary.req.tasks')} <b className={tasksOk ? 'text-success-700' : 'text-neutral-500'}>({passed.length}/{module.tasks.length})</b></span>
+      {/* checklist + recap — side by side on wide screens */}
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm divide-y divide-neutral-100">
+          <div className="px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('summary.checklist')}</div>
+          <div className="flex items-center gap-3 p-4">
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${tasksOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{tasksOk ? '✓' : '○'}</span>
+            <span className="text-sm text-neutral-700">{t('summary.req.tasks')} <b className={tasksOk ? 'text-success-700' : 'text-neutral-500'}>({passed.length}/{module.tasks.length})</b></span>
+          </div>
+          <div className="flex items-center gap-3 p-4">
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${quizOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{quizOk ? '✓' : '○'}</span>
+            <span className="text-sm text-neutral-700">{t('summary.req.quiz')} <b className={quizOk ? 'text-success-700' : 'text-neutral-500'}>({quizBest ?? 0}%)</b></span>
+          </div>
         </div>
-        <div className="flex items-center gap-3 p-4">
-          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${quizOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{quizOk ? '✓' : '○'}</span>
-          <span className="text-sm text-neutral-700">{t('summary.req.quiz')} <b className={quizOk ? 'text-success-700' : 'text-neutral-500'}>({quizBest ?? 0}%)</b></span>
+
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2">📚 {t('summary.recap')}</h4>
+          <ul className="space-y-1.5">
+            {module.summary[lang].map((s, i) => (
+              <li key={i} className="text-sm text-neutral-700 flex gap-2"><span className="text-brand-500">▸</span>{s}</li>
+            ))}
+          </ul>
         </div>
       </div>
 
@@ -359,16 +529,6 @@ function SummaryTab({ module, onNavigate, nextUnlocked }: { module: Module; onNa
         <StatCard label={t('summary.stats.tasks')} value={`${passed.length}/${module.tasks.length}`} />
         <StatCard label={t('summary.stats.quiz')} value={`${quizBest ?? 0}%`} />
         <StatCard label={t('summary.stats.hints')} value={String(hintsUsed)} />
-      </div>
-
-      {/* recap */}
-      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2">📚 {t('summary.recap')}</h4>
-        <ul className="space-y-1.5">
-          {module.summary[lang].map((s, i) => (
-            <li key={i} className="text-sm text-neutral-700 flex gap-2"><span className="text-brand-500">▸</span>{s}</li>
-          ))}
-        </ul>
       </div>
 
       {/* next module */}
@@ -396,6 +556,53 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
       <div className="text-lg font-heading font-bold text-neutral-800">{value}</div>
       <div className="text-[10px] text-neutral-500 uppercase tracking-wide">{label}</div>
+    </div>
+  );
+}
+
+/** One-shot, dependency-free CSS confetti burst (skipped under prefers-reduced-motion). */
+function Confetti({ onceKey }: { onceKey: string }) {
+  const [fire, setFire] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let seen = false;
+    try { seen = sessionStorage.getItem(onceKey) === '1'; } catch { /* private mode */ }
+    if (!seen) {
+      setFire(true);
+      try { sessionStorage.setItem(onceKey, '1'); } catch { /* ignore */ }
+    }
+  }, [onceKey]);
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 64 }, (_, i) => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 0.9,
+        dur: 2.4 + Math.random() * 1.8,
+        color: ['#4f46e5', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7', '#ec4899'][i % 7],
+        w: 5 + Math.random() * 5,
+        round: Math.random() > 0.6,
+      })),
+    []
+  );
+  if (!fire) return null;
+  return (
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+      <style>{`@keyframes sqlconf-fall{0%{transform:translateY(-8vh) rotate(0);opacity:1}100%{transform:translateY(108vh) rotate(660deg);opacity:.5}}`}</style>
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          style={{
+            position: 'absolute',
+            top: '-4vh',
+            left: `${p.left}%`,
+            width: p.w,
+            height: p.w * (p.round ? 1 : 1.7),
+            background: p.color,
+            borderRadius: p.round ? '50%' : 2,
+            animation: `sqlconf-fall ${p.dur}s ${p.delay}s cubic-bezier(.2,.5,.5,1) forwards`,
+          }}
+        />
+      ))}
     </div>
   );
 }

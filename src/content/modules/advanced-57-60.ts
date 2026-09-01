@@ -491,7 +491,7 @@ export const modules: Module[] = [
           ['Indexes go to migrations; rewrites go to code', 'Indexes migrations me; rewrites code me'],
           ['4 tasks · any 3 + quiz to reach the Capstone', '4 tasks · koi bhi 3 + quiz Capstone tak'],
         ],
-        []
+        'index-tree'
       ),
     ],
     tutorial: {
@@ -688,7 +688,7 @@ export const modules: Module[] = [
           ['Metric → grain → pipeline → validate → productionise', 'Metric → grain → pipeline → validate → productionise'],
           ['Everything from M1-M59, composed', 'M1-M59 ka sab kuch, jodа hua'],
         ],
-        []
+        'cte-chain'
       ),
       section(
         ['The deliverables', 'Deliverables'],

@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "1) **Diagram present?** Yes.\n2) **Any overlapping/clipped/colliding text or labels?** **CLEAN**. The diagram is well-structured with clear spacing between the table, labels, and partition indicators.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1788260051,
+  "id": "20260901185408f454dabe01374dda",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20260901185408f454dabe01374dda",
+  "usage": {
+    "completion_tokens": 49,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 5718,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 5767
+  }
+}

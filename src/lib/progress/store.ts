@@ -4,13 +4,27 @@
 
 import { useMemo } from 'react';
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 
 import { freshProgress, emptyModuleProgress } from '@/types/progress';
 import type { ModuleProgress, ProgressState, ProgressStats } from '@/types/progress';
 import type { Lang } from '@/types/content';
 import { MODULE_INDEX, TOTAL_MODULES, TOTAL_PROJECTS, moduleNumberToId, levelOfModule } from '@/lib/content/registry';
 import { isModuleUnlocked } from './unlock';
+import { useLangStore } from '@/lib/i18n/store';
+
+/** localStorage can throw (Safari private mode, quota, disabled cookies). */
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => {
+    try { return localStorage.getItem(name); } catch { return null; }
+  },
+  setItem: (name, value) => {
+    try { localStorage.setItem(name, value); } catch { /* storage full/blocked — keep in-memory state */ }
+  },
+  removeItem: (name) => {
+    try { localStorage.removeItem(name); } catch { /* noop */ }
+  },
+};
 
 interface ProgressActions {
   touch: () => void;
@@ -128,26 +142,28 @@ export const useProgressStore = create<ProgressStore>()(
 
       importState: (raw) => {
         try {
-          const parsed = JSON.parse(raw);
+          const parsed: unknown = JSON.parse(raw);
           // accept both wrapped {state} and bare progress
-          const data = parsed?.state?.modules ? parsed.state : parsed;
-          if (!data || typeof data !== 'object' || !data.modules) return false;
+          const data = (parsed as { state?: { modules?: unknown } })?.state?.modules
+            ? (parsed as { state: Record<string, unknown> }).state
+            : parsed;
+          if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+          const d = data as Record<string, unknown>;
+          const language = d.language === 'hi' ? 'hi' : 'en';
           set({
-            version: data.version ?? '1.0',
+            version: typeof d.version === 'string' ? d.version : '1.0',
             lastAccessed: new Date().toISOString(),
-            language: data.language === 'hi' ? 'hi' : 'en',
-            currentLevel: data.currentLevel ?? 'beginner',
+            language,
+            currentLevel: d.currentLevel === 'intermediate' || d.currentLevel === 'advanced' ? d.currentLevel : 'beginner',
             returning: true,
-            modules: data.modules ?? {},
-            projects: data.projects ?? {},
-            lastModule: data.lastModule ?? null,
-            stats: {
-              totalQueriesRun: data.stats?.totalQueriesRun ?? 0,
-              totalTasksCompleted: data.stats?.totalTasksCompleted ?? 0,
-              totalHintsUsed: data.stats?.totalHintsUsed ?? 0,
-              timeSpentSeconds: data.stats?.timeSpentSeconds ?? 0,
-            },
+            modules: sanitizeModules(d.modules),
+            projects: sanitizeProjects(d.projects),
+            lastModule: typeof d.lastModule === 'string' ? d.lastModule : null,
+            stats: sanitizeStats(d.stats),
           });
+          // Keep the UI language store in sync so the whole interface
+          // (not just task text) follows the imported preference.
+          useLangStore.getState().setLang(language);
           return true;
         } catch {
           return false;
@@ -171,7 +187,7 @@ export const useProgressStore = create<ProgressStore>()(
     }),
     {
       name: 'sqlLearnProgress',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (s) => ({
         version: s.version,
         lastAccessed: s.lastAccessed,
@@ -192,6 +208,69 @@ const PROJECT_TOTALS: Record<string, number> = {
   p1: 5, p2: 6, p3: 6, p4: 5, p5: 5, p6: 4,
   lp1: 8, lp2: 10, lp3: 8, capstone: 12,
 };
+
+// ---------- import sanitizers (defend against malformed backup files) ----------
+
+function strArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+function numRecord(v: unknown): Record<string, number> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof val === 'number' && Number.isFinite(val) && val >= 0) out[k] = val;
+  }
+  return out;
+}
+function clampNum(v: unknown, max: number): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(v, max) : 0;
+}
+function sanitizeModules(v: unknown): ProgressState['modules'] {
+  const out: ProgressState['modules'] = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [id, raw] of Object.entries(v as Record<string, unknown>)) {
+    if (!/^module-\d{1,3}$/.test(id) || !raw || typeof raw !== 'object') continue;
+    const m = raw as Record<string, unknown>;
+    const tasksCompleted = strArray(m.tasksCompleted);
+    const quizBest = typeof m.quizBestScore === 'number' ? Math.max(0, Math.min(100, Math.round(m.quizBestScore))) : null;
+    // "completed" only survives if the completion criteria actually hold
+    // (≥3 tasks passed AND quiz ≥ 70) — otherwise demote to in_progress.
+    const genuine = tasksCompleted.length >= 3 && (quizBest ?? 0) >= 70;
+    out[id] = {
+      theoryRead: m.theoryRead === true,
+      tasksCompleted,
+      tasksSkipped: strArray(m.tasksSkipped),
+      hintsUsed: numRecord(m.hintsUsed),
+      quizBestScore: quizBest,
+      quizAttempts: clampNum(m.quizAttempts, 1000),
+      status: m.status === 'completed' && genuine ? 'completed' : 'in_progress',
+      completedAt: m.status === 'completed' && genuine && typeof m.completedAt === 'string' ? m.completedAt : null,
+    };
+  }
+  return out;
+}
+function sanitizeProjects(v: unknown): ProgressState['projects'] {
+  const out: ProgressState['projects'] = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [id, raw] of Object.entries(v as Record<string, unknown>)) {
+    if (!/^[\w-]{1,32}$/.test(id) || !raw || typeof raw !== 'object') continue;
+    const p = raw as Record<string, unknown>;
+    out[id] = {
+      status: p.status === 'completed' ? 'completed' : 'in_progress',
+      tasksCompleted: strArray(p.tasksCompleted),
+    };
+  }
+  return out;
+}
+function sanitizeStats(v: unknown): ProgressStats {
+  const s = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+  return {
+    totalQueriesRun: clampNum(s.totalQueriesRun, 100_000_000),
+    totalTasksCompleted: clampNum(s.totalTasksCompleted, 100_000),
+    totalHintsUsed: clampNum(s.totalHintsUsed, 1_000_000),
+    timeSpentSeconds: clampNum(s.timeSpentSeconds, 100_000_000),
+  };
+}
 
 /** Apply completion criteria (spec #23: 3/5 tasks AND quiz ≥ 70%). */
 function finalize(mp: ModuleProgress, moduleId: string, _s: ProgressState) {

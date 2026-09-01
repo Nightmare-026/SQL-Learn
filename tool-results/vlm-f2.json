@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "1) **Yes**, the main labels are in Hindi: 'प्राइमरी की', 'कॉलम', 'पंक्ति = 1 रिकॉर्ड', and 'सेल = एक वैल्यू' (visible in the database concept diagram with the students table).\n\n2) **Yes**, the table renders fine with data (the students table is clearly visible with rows for Alice, Bob, etc., and columns like ID, Name, Age).\n\n3) **No**, there is no overlap or clipping; all elements including labels, table borders, and text are properly spaced and fully visible.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1788260502,
+  "id": "2026090119013854fd56eaf2f4437e",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026090119013854fd56eaf2f4437e",
+  "usage": {
+    "completion_tokens": 147,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 1771,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 1918
+  }
+}

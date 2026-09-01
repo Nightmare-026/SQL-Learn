@@ -34,8 +34,8 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'landing.hero.title1': { en: 'Learn SQL.', hi: 'SQL Seekho.' },
   'landing.hero.title2': { en: 'Become an Expert.', hi: 'Expert Bano.' },
   'landing.hero.sub': {
-    en: 'A complete browser-based course: 60 structured modules, 300 practice tasks with real query validation, and industry-level projects — right in your browser.',
-    hi: 'Complete browser-based course: 60 modules, 300 practice tasks with real query validation, aur industry-level projects — sab kuch aapke browser me.',
+    en: 'A complete browser-based course: 60 structured modules, 316 practice tasks with real query validation, and industry-level projects — right in your browser.',
+    hi: 'Complete browser-based course: 60 modules, 316 practice tasks with real query validation, aur industry-level projects — sab kuch aapke browser me.',
   },
   'landing.cta.start': { en: 'Start Learning', hi: 'Seekhna Shuru Karo' },
   'landing.cta.continue': { en: 'Continue Learning', hi: 'Continue Karo' },
@@ -132,6 +132,11 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'theory.pause': { en: 'Pause', hi: 'Pause' },
   'theory.replay': { en: 'Replay', hi: 'Replay' },
   'theory.step': { en: 'Step', hi: 'Step' },
+  'theory.speed': { en: 'Playback speed', hi: 'Playback speed' },
+  'theory.liveTable': { en: 'live', hi: 'live' },
+  'theory.rowsMatch': { en: 'rows match', hi: 'rows match' },
+  'theory.pressPlay': { en: 'Press Play — watch the query type itself and the live table respond', hi: 'Play dabao — query khud type hogi aur live table react karega' },
+  'theory.result': { en: 'Result', hi: 'Result' },
   'theory.syntax': { en: 'Syntax', hi: 'Syntax' },
   'theory.examples': { en: 'Examples', hi: 'Examples' },
   'theory.output': { en: 'Output', hi: 'Output' },
@@ -141,6 +146,11 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'theory.fix': { en: 'Fix', hi: 'Fix' },
   'theory.objectives': { en: 'What you will learn', hi: 'Aap kya seekhenge' },
   'theory.runFailed': { en: 'Example failed to run', hi: 'Example run nahi hua' },
+  'theory.minRead': { en: 'min', hi: 'min' },
+  'theory.resume': { en: 'Resume reading', hi: 'Wahi se padho' },
+  'theory.verified': { en: 'Verified content · industry-standard SQL', hi: 'Verified content · industry-standard SQL' },
+  'theory.keyPoints': { en: 'Key takeaways', hi: 'Zaroori baatein' },
+  'theory.lesson': { en: 'Lesson', hi: 'Lesson' },
 
   // Quiz
   'quiz.intro.title': { en: 'Module quiz', hi: 'Module quiz' },
@@ -168,6 +178,7 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'quiz.build.reset': { en: 'Reset', hi: 'Reset' },
   'quiz.blanks': { en: 'Fill in the blanks', hi: 'Blanks bharo' },
   'quiz.queryShown': { en: 'Query', hi: 'Query' },
+  'quiz.query': { en: 'Query', hi: 'Query' },
 
   // Console
   'console.schema': { en: 'Schema', hi: 'Schema' },
@@ -289,6 +300,8 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'summary.nextLocked': { en: 'Finish this module to unlock the next', hi: 'Agla module unlock karne ke liye yeh complete karo' },
   'summary.completed': { en: 'Module completed', hi: 'Module complete ho gaya' },
   'summary.notYet': { en: 'Keep going — you are close!', hi: 'Bas thoda aur — aap paas ho!' },
+  'summary.celebrate': { en: 'Congratulations!', hi: 'Badhai ho!' },
+  'summary.celebrateSub': { en: 'You finished this module — great progress!', hi: 'Yeh module khatam ho gaya — badhiya progress!' },
   'summary.stats.tasks': { en: 'Tasks passed', hi: 'Tasks pass' },
   'summary.stats.quiz': { en: 'Quiz best score', hi: 'Quiz best score' },
   'summary.stats.hints': { en: 'Hints used', hi: 'Hints use kiye' },
@@ -327,4 +340,37 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'diff.expert': { en: 'Expert', hi: 'Expert' },
   'common.viewAll': { en: 'View all', hi: 'Sab dekho' },
   'common.unlockHint': { en: 'Unlock hint', hi: 'Hint unlock karo' },
+
+  // Shared action / status words (confirm dialogs, toasts)
+  'common.yes': { en: 'Yes', hi: 'Haan' },
+  'common.no': { en: 'No', hi: 'Nahi' },
+  'common.retry': { en: 'Retry', hi: 'Phir try karo' },
+  'common.copied': { en: 'Copied', hi: 'Copy ho gaya' },
+  'common.copyFail': { en: 'Copy failed — your browser blocked the clipboard', hi: 'Copy fail — browser ne clipboard block kar diya' },
+  'common.resetDone': { en: 'Database reset', hi: 'Database reset ho gaya' },
+  'common.progressReset': { en: 'Progress reset', hi: 'Progress reset ho gaya' },
+  'common.backupCopied': { en: 'Backup code copied', hi: 'Backup code copy ho gaya' },
+
+  // Error handling / resilience
+  'error.dbLoad.title': { en: 'Could not load the SQL engine', hi: 'SQL engine load nahi hua' },
+  'error.dbLoad.desc': {
+    en: 'The SQLite engine (WebAssembly) failed to load. This is usually a network hiccup or a blocked download.',
+    hi: 'SQLite engine (WebAssembly) load nahi hua. Aksar network issue ya blocked download ki wajah se hota hai.',
+  },
+  'error.moduleLoad.title': { en: 'Could not load this module', hi: 'Yeh module load nahi hua' },
+  'error.moduleLoad.desc': { en: 'Something went wrong while loading the content. Try again.', hi: 'Content load karte waqt kuch galat ho gaya. Phir se try karo.' },
+  'error.projectLoad.title': { en: 'Could not load the projects', hi: 'Projects load nahi hue' },
+  'error.boundary.title': { en: 'Something went wrong', hi: 'Kuch galat ho gaya' },
+  'error.boundary.desc': {
+    en: 'An unexpected error occurred. Your progress is safe — reload the page to continue.',
+    hi: 'Achanak koi error aaya. Aapka progress safe hai — page reload karke continue karo.',
+  },
+  'error.boundary.reload': { en: 'Reload page', hi: 'Page reload karo' },
+
+  // Module meta
+  'module.quizCount': { en: 'quiz questions', hi: 'quiz questions' },
+
+  // Projects page misc
+  'projects.notFound': { en: 'Project not found', hi: 'Project nahi mila' },
+  'projects.lockedDesc': { en: 'Unlock module {n} to access this project.', hi: 'Yeh project access karne ke liye module {n} unlock karo.' },
 };

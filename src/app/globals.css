@@ -127,6 +127,18 @@
 .tok-ident { color: #0F172A; }
 .tok-null { color: #DC2626; font-weight: 600; }
 
+/* Dark-scope SQL theme — light, high-contrast colors for dark code panels
+   (keyword = light cyan, punctuation = light grey; every token stays readable). */
+.sql-dark .tok-keyword { color: #67E8F9; font-weight: 600; }
+.sql-dark .tok-function { color: #C4B5FD; font-weight: 500; }
+.sql-dark .tok-string { color: #86EFAC; }
+.sql-dark .tok-number { color: #FCD34D; }
+.sql-dark .tok-comment { color: #94A3B8; font-style: italic; }
+.sql-dark .tok-punct { color: #CBD5E1; }
+.sql-dark .tok-operator { color: #FDBA74; }
+.sql-dark .tok-ident { color: #E2E8F0; }
+.sql-dark .tok-null { color: #FCA5A5; font-weight: 600; }
+
 /* ---------- Editor overlay ---------- */
 .editor-stack {
   position: relative;
@@ -166,3 +178,20 @@
 .diff-cell-extra { background: #FFF7ED; color: #B45309; }
 .table-row-highlight { background: #DBEAFE; }
 .table-row-faded { opacity: 0.35; }
+
+/* ---------- Animated tutorial motion ---------- */
+/* Live table rows glide between normal / highlighted / faded states */
+.tut-row { transition: background-color 0.45s ease, opacity 0.45s ease, transform 0.45s ease; }
+.tut-row-hl { background: #DBEAFE; opacity: 1; }
+.tut-row-hl > td:first-child { box-shadow: inset 3px 0 0 #2563EB; }
+.tut-row-faded { opacity: 0.28; }
+/* Result table pops in when the query runs */
+@keyframes tut-reveal {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tut-reveal { animation: tut-reveal 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .tut-row { transition: none; }
+  .tut-reveal { animation: none; }
+}

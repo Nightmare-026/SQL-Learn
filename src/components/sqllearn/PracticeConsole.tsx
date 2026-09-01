@@ -3,7 +3,7 @@
 // ============ 3-Panel Practice Console (spec §8) ============
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Database, Play, RotateCcw, Trash2, Copy, Check, ChevronRight, Lightbulb, SkipForward, PanelLeft, Loader2 } from 'lucide-react';
+import { Database, Play, RotateCcw, Trash2, Copy, Check, ChevronRight, Lightbulb, SkipForward, PanelLeft, Loader2, AlertTriangle, RotateCw } from 'lucide-react';
 import { DbContext, type SchemaMeta, type TableMeta } from '@/lib/sql/engine';
 import type { Cell, PracticeTask, QueryResult } from '@/types/content';
 import { tokenizeSql } from '@/lib/sql/tokenizer';
@@ -13,6 +13,10 @@ import { ResultTable } from './SQLDisplay';
 import { useT } from '@/lib/i18n/store';
 import { useProgressStore } from '@/lib/progress/store';
 import { toast } from 'sonner';
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 export interface ConsoleTaskDriver {
   tasks: PracticeTask[];
@@ -40,6 +44,7 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
   const t = useT();
   const ctxRef = useRef<DbContext | null>(null);
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [schema, setSchema] = useState<SchemaMeta | null>(null);
   const [query, setQuery] = useState('');
   const [runState, setRunState] = useState<RunState>({ kind: 'idle' });
@@ -52,18 +57,38 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
   const task = driver.tasks[driver.taskIndex];
   const passedSet = useMemo(() => new Set(driver.completedTasks), [driver.completedTasks]);
 
-  // Init DB per dataset
+  // Init DB per dataset — with error state + retry (never a dead spinner).
+  // NOTE: all mount sites remount this component when `dataset` changes
+  // (key-remount), so the effect only runs its async init once per instance.
   useEffect(() => {
     let alive = true;
     const ctx = new DbContext(dataset as never);
     ctxRef.current = ctx;
-    setReady(false);
-    ctx.ensure().then(() => ctx.schema()).then((s) => {
-      if (!alive) return;
-      setSchema(s);
-      setReady(true);
-    });
+    ctx
+      .ensure()
+      .then(() => ctx.schema())
+      .then((s) => {
+        if (!alive) return;
+        setSchema(s);
+        setReady(true);
+      })
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setInitError(e instanceof Error ? e.message : String(e));
+      });
     return () => { alive = false; };
+  }, [dataset]);
+
+  const retryInit = useCallback(() => {
+    const ctx = new DbContext(dataset as never);
+    ctxRef.current = ctx;
+    setInitError(null);
+    setReady(false);
+    ctx
+      .ensure()
+      .then(() => ctx.schema())
+      .then((s) => { setSchema(s); setReady(true); })
+      .catch((e: unknown) => setInitError(e instanceof Error ? e.message : String(e)));
   }, [dataset]);
 
   // Seed editor with a starter when task changes
@@ -71,6 +96,16 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
     if (task && query.trim() === '') setQuery('SELECT * FROM ' + (schema?.tables[0]?.name ?? 'students') + ' LIMIT 5;');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driver.taskIndex, schema]);
+
+  // Reset per-task interaction state when the selected task changes.
+  // Render-phase adjustment (React-documented pattern) — avoids an effect.
+  const [prevTaskIdx, setPrevTaskIdx] = useState(driver.taskIndex);
+  if (prevTaskIdx !== driver.taskIndex) {
+    setPrevTaskIdx(driver.taskIndex);
+    setHintsOpen(0);
+    setAttempts(0);
+    setRunState({ kind: 'idle' });
+  }
 
   const handleRun = useCallback(async () => {
     if (!ctxRef.current || !query.trim() || runState.kind === 'running') return;
@@ -101,8 +136,6 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
           }
         }
         // not matched or verify failed
-        const errMsg = 'verifyError' in ({} as never) ? null : null;
-        void errMsg;
         const execErr = script.errors.length ? script.errors[script.errors.length - 1] : null;
         if (execErr) {
           setRunState({ kind: 'error', error: execErr.error });
@@ -161,9 +194,28 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
   const hlHtml = useMemo(() => {
     const tokens = tokenizeSql(query + '\n');
     return tokens
-      .map((tk) => (tk.cls ? `<span class="${tk.cls}">${tk.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>` : tk.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')))
+      .map((tk) => (tk.cls ? `<span class="${tk.cls}">${escapeHtml(tk.text)}</span>` : escapeHtml(tk.text)))
       .join('');
   }, [query]);
+
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-danger-50 flex items-center justify-center">
+          <AlertTriangle className="w-6 h-6 text-danger-600" />
+        </div>
+        <p className="text-sm font-bold text-danger-700">{t('error.dbLoad.title')}</p>
+        <p className="text-xs text-neutral-500 max-w-md leading-relaxed">{t('error.dbLoad.desc')}</p>
+        <p className="text-[11px] text-neutral-400 max-w-md break-words">{initError}</p>
+        <button
+          onClick={retryInit}
+          className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
+        >
+          <RotateCw className="w-3.5 h-3.5" /> {t('common.retry')}
+        </button>
+      </div>
+    );
+  }
 
   if (!ready) {
     return (
@@ -231,7 +283,14 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
               <Trash2 className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => { navigator.clipboard?.writeText(query); toast.success(t('console.copied')); }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard?.writeText(query);
+                  toast.success(t('console.copied'));
+                } catch {
+                  toast.error(t('common.copyFail'));
+                }
+              }}
               className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs text-neutral-700 hover:border-neutral-400 transition"
               title={t('console.copy')}
             >
@@ -260,13 +319,13 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-            {task.hints.slice(0, Math.max(hintsOpen, 1)).map((h, i) => (
+            {task.hints.slice(0, hintsOpen).map((h, i) => (
               <HintPill key={i} level={i + 1} type={h.type} content={h.content} />
             ))}
-            {hintsOpen < 3 && (
+            {hintsOpen < task.hints.length && (
               <button
                 onClick={() => {
-                  const next = Math.min(3, hintsOpen + 1);
+                  const next = Math.min(task.hints.length, hintsOpen + 1);
                   setHintsOpen(next);
                   driver.onHintsUsed(task.id, next);
                 }}
@@ -275,7 +334,7 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
                 <Lightbulb className="w-3 h-3" /> {t('console.showHint')} {hintsOpen + 1}
               </button>
             )}
-            {!passedSet.has(task.id) && hintsOpen >= 3 && (
+            {!passedSet.has(task.id) && hintsOpen >= task.hints.length && (
               <button
                 onClick={() => { driver.onTaskSkipped(task.id); }}
                 className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-600 hover:border-neutral-400 transition"
@@ -289,7 +348,7 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
             </div>
           </div>
           <div className="px-4 pb-2.5 text-xs text-neutral-500">
-            {t('console.need')} {needCount}/5 · {t('console.toComplete')}
+            {t('console.need')} {needCount}/{driver.tasks.length} · {t('console.toComplete')}
           </div>
         </div>
       )}
@@ -399,12 +458,21 @@ function ResultsPanel({ runState, task, onFix }: { runState: RunState; task: Pra
   }
   if (runState.kind === 'error') {
     const friendly = matchFriendlyError(runState.error);
+    const lang = useProgressStore.getState().language;
     return (
       <div className="p-4 overflow-y-auto custom-scroll">
         <div className="rounded-xl border border-danger-200 bg-danger-50 p-4">
           <div className="font-bold text-danger-700 mb-1">❌ {t('console.error')}</div>
           {friendly && (
-            <p className="text-sm text-danger-900/90 leading-relaxed mb-2">{friendly.title[t === 'dummy' ? 'en' : 'en']}</p>
+            <div className="mb-2">
+              <p className="text-sm text-danger-900/90 leading-relaxed">{friendly.title[lang]}</p>
+              {friendly.suggestion && (
+                <p className="text-xs text-danger-800/80 leading-relaxed mt-1.5 flex gap-1.5">
+                  <span className="shrink-0 font-bold">💡</span>
+                  <span>{friendly.suggestion[lang]}</span>
+                </p>
+              )}
+            </div>
           )}
           <div className="mt-2 pt-2 border-t border-danger-200">
             <div className="text-[10px] font-bold uppercase text-danger-600 mb-1">{t('console.technical')}</div>
@@ -476,9 +544,10 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 function HintPill({ level, type, content }: { level: number; type: string; content: { en: string; hi: string } }) {
   const lang = useProgressStore((s) => s.language);
-  const [open, setOpen] = useState(false);
   const t = useT();
-  if (!open) return null;
+  // Parent controls which levels are revealed; this pill always shows its
+  // content once rendered (previously an internal `open=false` state made
+  // every hint invisible — a regression that hid ALL hints).
   return (
     <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 px-3 py-1.5 max-w-full">
       <span className="text-[10px] font-bold uppercase text-warning-700 mt-0.5 shrink-0">{t('console.hint')} {level}</span>

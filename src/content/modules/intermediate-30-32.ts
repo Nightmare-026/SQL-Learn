@@ -35,7 +35,7 @@ export const modules: Module[] = [
           ['Round money for humans, keep exactness for math', 'Insaan ke liye paisa round karo, maths ke liye exact rakho'],
           ['The join trio customers→orders→payments powers revenue work', 'customers→orders→payments join trio revenue kaam chalata hai'],
         ],
-        []
+        'group-buckets'
       ),
     ],
     tutorial: {

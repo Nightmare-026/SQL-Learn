@@ -15,7 +15,7 @@ export function SQLCode({ code, className = '' }: { code: string; className?: st
   }, [code]);
   const lineCount = code.split('\n').length;
   return (
-    <div className={`relative rounded-lg border bg-neutral-900 overflow-x-auto custom-scroll ${className}`}>
+    <div className={`relative rounded-lg border bg-neutral-900 sql-dark overflow-x-auto custom-scroll ${className}`}>
       <div className="flex min-w-0">
         <div className="select-none py-3 pl-3 pr-2 text-right text-neutral-600 text-[11px] leading-[1.6] sql-code">
           {Array.from({ length: lineCount }, (_, i) => (
@@ -42,7 +42,7 @@ export function SQLChip({ code }: { code: string }) {
   }, [code]);
   return (
     <code
-      className="block rounded-md bg-neutral-900 px-3 py-2 sql-code whitespace-pre-wrap break-words custom-scroll"
+      className="block rounded-md bg-neutral-900 sql-dark px-3 py-2 sql-code whitespace-pre-wrap break-words custom-scroll"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

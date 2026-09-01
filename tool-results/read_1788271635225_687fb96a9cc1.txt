@@ -1,0 +1,702 @@
+     1→'use client';
+     2→
+     3→// ============ Module page: Theory / Quiz / Practice / Summary (spec §16.4) ============
+     4→
+     5→import React, { useEffect, useMemo, useRef, useState } from 'react';
+     6→import { BookOpen, ClipboardList, Terminal, CheckCircle2, Lock, ArrowLeft, ArrowRight, Home, ChevronDown, AlertTriangle, RotateCw, BadgeCheck, ArrowDown } from 'lucide-react';
+     7→import type { Module } from '@/types/content';
+     8→import { loadModule } from '@/lib/content/registry';
+     9→import { MODULE_INDEX, levelOfModule } from '@/lib/content/registry';
+    10→import { useProgressStore } from '@/lib/progress/store';
+    11→import { useLang, useT } from '@/lib/i18n/store';
+    12→import { AnimatedTutorial } from '@/components/sqllearn/AnimatedTutorial';
+    13→import { QuizTab } from '@/components/sqllearn/QuizTab';
+    14→import { Diagram } from '@/components/sqllearn/Diagram';
+    15→import { SQLCode, SQLChip } from '@/components/sqllearn/SQLDisplay';
+    16→import { LEVEL_META } from '@/lib/content/registry';
+    17→import { isModuleUnlocked } from '@/lib/progress/unlock';
+    18→import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/LazyPracticeConsole';
+    19→
+    20→export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number; onNavigate: (route: string) => void }) {
+    21→  const t = useT();
+    22→  const lang = useLang();
+    23→  const [module, setModule] = useState<Module | null>(null);
+    24→  const [loadError, setLoadError] = useState(false);
+    25→  const [tab, setTab] = useState<'theory' | 'quiz' | 'practice' | 'summary'>('theory');
+    26→  const [practiceTask, setPracticeTask] = useState(0);
+    27→  const [mounted, setMounted] = useState(false);
+    28→  const progress = useProgressStore();
+    29→  const mp = useProgressStore((s) => s.modules[`module-${String(moduleNumber).padStart(2, '0')}`]);
+    30→  const unlocked = isModuleUnlocked(moduleNumber, progress);
+    31→  const bumpStats = useProgressStore((s) => s.bumpStats);
+    32→  const markTheoryRead = useProgressStore((s) => s.markTheoryRead);
+    33→  const recordQuiz = useProgressStore((s) => s.recordQuiz);
+    34→  const setLastModule = useProgressStore((s) => s.setLastModule);
+    35→  const touch = useProgressStore((s) => s.touch);
+    36→
+    37→  useEffect(() => {
+    38→    setMounted(true);
+    39→    let alive = true;
+    40→    setLoadError(false);
+    41→    setModule(null);
+    42→    loadModule(moduleNumber)
+    43→      .then((m) => {
+    44→        if (!alive) return;
+    45→        setModule(m);
+    46→        setTab('theory');
+    47→        // start at the first unpassed task (moduleNumber captured at effect start)
+    48→        const prog = useProgressStore.getState().modules[m.id];
+    49→        const doneIds = new Set(prog?.tasksCompleted ?? []);
+    50→        const firstOpenIdx = m.tasks.findIndex((tsk) => !doneIds.has(tsk.id));
+    51→        setPracticeTask(firstOpenIdx === -1 ? 0 : firstOpenIdx);
+    52→      })
+    53→      .catch(() => {
+    54→        if (alive) setLoadError(true);
+    55→      });
+    56→    touch();
+    57→    setLastModule(`module-${String(moduleNumber).padStart(2, '0')}`);
+    58→    return () => { alive = false; };
+    59→  }, [moduleNumber, touch, setLastModule]);
+    60→
+    61→  const entry = MODULE_INDEX[moduleNumber];
+    62→  const levelMeta = LEVEL_META[levelOfModule(moduleNumber)];
+    63→
+    64→  const retryLoad = () => {
+    65→    setLoadError(false);
+    66→    loadModule(moduleNumber)
+    67→      .then((m) => { setModule(m); setTab('theory'); })
+    68→      .catch(() => setLoadError(true));
+    69→  };
+    70→
+    71→  if (!mounted) return null;
+    72→  if (loadError) {
+    73→    return (
+    74→      <div className="max-w-xl mx-auto px-4 py-24 text-center">
+    75→        <div className="w-14 h-14 rounded-2xl bg-danger-50 flex items-center justify-center mx-auto mb-4">
+    76→          <AlertTriangle className="w-7 h-7 text-danger-500" />
+    77→        </div>
+    78→        <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('error.moduleLoad.title')}</h2>
+    79→        <p className="text-sm text-neutral-600 mb-6">{t('error.moduleLoad.desc')}</p>
+    80→        <button onClick={retryLoad} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">
+    81→          <RotateCw className="w-4 h-4" /> {t('common.retry')}
+    82→        </button>
+    83→      </div>
+    84→    );
+    85→  }
+    86→  if (!module) {
+    87→    return (
+    88→      <div className="max-w-4xl mx-auto px-4 py-24 text-center text-neutral-500">
+    89→        <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+    90→        <p className="text-sm">{t('common.loading')}</p>
+    91→      </div>
+    92→    );
+    93→  }
+    94→
+    95→  if (!unlocked) {
+    96→    return (
+    97→      <div className="max-w-xl mx-auto px-4 py-24 text-center">
+    98→        <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+    99→          <Lock className="w-7 h-7 text-neutral-400" />
+   100→        </div>
+   101→        <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('module.locked.title')}</h2>
+   102→        <p className="text-sm text-neutral-600 mb-6">{t('module.locked.desc')}</p>
+   103→        <button onClick={() => onNavigate('/')} className="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">{t('nav.home')}</button>
+   104→      </div>
+   105→    );
+   106→  }
+   107→
+   108→  const tabs = [
+   109→    { id: 'theory', icon: BookOpen, label: t('module.tab.theory') },
+   110→    { id: 'quiz', icon: ClipboardList, label: t('module.tab.quiz') },
+   111→    { id: 'practice', icon: Terminal, label: t('module.tab.practice') },
+   112→    { id: 'summary', icon: CheckCircle2, label: t('module.tab.summary') },
+   113→  ] as const;
+   114→
+   115→  const theoryRead = mp?.theoryRead ?? false;
+   116→  const passed = mp?.tasksCompleted ?? [];
+   117→  const quizBest = mp?.quizBestScore ?? null;
+   118→  const completed = mp?.status === 'completed';
+   119→  const nextUnlockedNum = moduleNumber < 60 ? moduleNumber + 1 : null;
+   120→
+   121→  return (
+   122→    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+   123→      {/* Header */}
+   124→      <div className="mb-5">
+   125→        <div className="flex items-center gap-2 text-xs mb-2">
+   126→          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${levelMeta.badge}`}>
+   127→            <span className="w-1.5 h-1.5 rounded-full" style={{ background: levelMeta.dot }} />
+   128→            {t(`level.${entry.level}`)}
+   129→          </span>
+   130→          <span className="text-neutral-500">M{moduleNumber}</span>
+   131→          {completed && <span className="text-success-600 font-bold text-[10px]">✓ {t('status.completed')}</span>}
+   132→        </div>
+   133→        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-neutral-900 leading-tight mb-1">{module.title[lang]}</h1>
+   134→        <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500">
+   135→          <span>⏱ {entry.estimatedTime}</span>
+   136→          <span>⌨ {entry.taskCount} {t('stats.tasks').toLowerCase()}</span>
+   137→          <span>📝 {module.quiz.length} {t('module.quizCount')}</span>
+   138→          <span className="inline-flex items-center gap-1 text-success-700"><BadgeCheck className="w-3.5 h-3.5" />{t('theory.verified')}</span>
+   139→        </div>
+   140→      </div>
+   141→
+   142→      {/* Tabs */}
+   143→      <div className="flex gap-1 mb-5 border-b border-neutral-200 overflow-x-auto custom-scroll">
+   144→        {tabs.map(({ id, icon: Icon, label }) => (
+   145→          <button
+   146→            key={id}
+   147→            onClick={() => setTab(id)}
+   148→            className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
+   149→              tab === id ? 'border-brand-600 text-brand-700' : 'border-transparent text-neutral-500 hover:text-neutral-800'
+   150→            }`}
+   151→          >
+   152→            <Icon className="w-4 h-4" />
+   153→            {label}
+   154→            {id === 'practice' && passed.length > 0 && <span className="text-[10px] bg-success-100 text-success-700 rounded-full px-1.5">{passed.length}/{entry.taskCount}</span>}
+   155→            {id === 'quiz' && quizBest !== null && <span className="text-[10px] bg-brand-100 text-brand-700 rounded-full px-1.5">{quizBest}%</span>}
+   156→          </button>
+   157→        ))}
+   158→      </div>
+   159→
+   160→      {/* Content */}
+   161→      {tab === 'theory' && (
+   162→        <TheoryTab module={module} theoryRead={theoryRead} onRead={() => markTheoryRead(module.id)} />
+   163→      )}
+   164→      {tab === 'quiz' && (
+   165→        <QuizTab module={module} onScore={(pct) => { recordQuiz(module.id, pct); bumpStats({}); }} />
+   166→      )}
+   167→      {tab === 'practice' && (
+   168→        <div className="h-[calc(100vh-260px)] min-h-[520px]">
+   169→          <div className="lg:hidden mb-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-xs text-warning-800 leading-relaxed">
+   170→            <b>⚠ {t('mobile.warn.title')}</b> — {t('mobile.warn.desc')}
+   171→          </div>
+   172→          <div className="h-full rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
+   173→            <ConsoleSuspense label={t('common.loading')}>
+   174→              <LazyPracticeConsole
+   175→              dataset={module.dataset}
+   176→              driver={{
+   177→                tasks: module.tasks,
+   178→                taskIndex: Math.min(practiceTask, module.tasks.length - 1),
+   179→                setTaskIndex: (i: number) => setPracticeTask(i),
+   180→                onTaskPassed: (taskId) => {
+   181→                  markTaskCompleted(module.id, taskId);
+   182→                  // auto-advance to the next unpassed task
+   183→                  const idx = module.tasks.findIndex((tsk) => tsk.id === taskId);
+   184→                  for (let i = idx + 1; i < module.tasks.length; i++) {
+   185→                    if (!passed.includes(module.tasks[i].id)) { setPracticeTask(i); return; }
+   186→                  }
+   187→                },
+   188→                onTaskSkipped: (taskId) => markTaskSkipped(module.id, taskId),
+   189→                onHintsUsed: (taskId, count) => recordHints(module.id, taskId, count),
+   190→                completedTasks: passed,
+   191→                skippedTasks: mp?.tasksSkipped ?? [],
+   192→                hintsUsed: mp?.hintsUsed ?? {},
+   193→                datasetLabel: module.dataset,
+   194→              }}
+   195→              onQueryRun={() => bumpStats({ totalQueriesRun: 1 })}
+   196→            />
+   197→            </ConsoleSuspense>
+   198→          </div>
+   199→        </div>
+   200→      )}
+   201→      {tab === 'summary' && (
+   202→        <SummaryTab module={module} onNavigate={onNavigate} nextUnlocked={nextUnlockedNum} />
+   203→      )}
+   204→
+   205→      {/* Footer nav */}
+   206→      <div className="mt-8 flex items-center justify-between gap-2 border-t border-neutral-200 pt-4">
+   207→        <button
+   208→          onClick={() => onNavigate(moduleNumber > 1 ? `/module/${moduleNumber - 1}` : '/')}
+   209→          disabled={moduleNumber === 1}
+   210→          className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-400 disabled:opacity-30 transition"
+   211→        >
+   212→          <ArrowLeft className="w-3.5 h-3.5" /> {t('module.prev')}
+   213→        </button>
+   214→        <button onClick={() => onNavigate('/')} className="text-xs text-neutral-500 hover:text-brand-600 inline-flex items-center gap-1 transition">
+   215→          <Home className="w-3.5 h-3.5" /> {t('nav.home')}
+   216→        </button>
+   217→        <button
+   218→          onClick={() => nextUnlockedNum && onNavigate(`/module/${nextUnlockedNum}`)}
+   219→          disabled={!nextUnlockedNum || !completed}
+   220→          className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-40 transition"
+   221→        >
+   222→          {t('module.next')} <ArrowRight className="w-3.5 h-3.5" />
+   223→        </button>
+   224→      </div>
+   225→    </div>
+   226→  );
+   227→
+   228→  function markTaskCompleted(moduleId: string, taskId: string) {
+   229→    useProgressStore.getState().markTaskCompleted(moduleId, taskId);
+   230→  }
+   231→  function markTaskSkipped(moduleId: string, taskId: string) {
+   232→    useProgressStore.getState().markTaskSkipped(moduleId, taskId);
+   233→  }
+   234→  function recordHints(moduleId: string, taskId: string, count: number) {
+   235→    // `count` is the task's new hint total; only the newly revealed hint counts.
+   236→    const prev = useProgressStore.getState().modules[moduleId]?.hintsUsed?.[taskId] ?? 0;
+   237→    useProgressStore.getState().recordHints(moduleId, taskId, count);
+   238→    useProgressStore.getState().bumpStats({ totalHintsUsed: Math.max(0, count - prev) });
+   239→  }
+   240→}
+   241→
+   242→// ============ Theory tab ============
+   243→function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead: boolean; onRead: () => void }) {
+   244→  const lang = useLang();
+   245→  const t = useT();
+   246→  const contentRef = useRef<HTMLDivElement>(null);
+   247→  const progressPct = useReadingProgress(contentRef);
+   248→
+   249→  // TOC model: objectives + numbered theory sections + syntax + examples + mistakes
+   250→  const sections = useMemo(() => {
+   251→    const list: { id: string; n: string; label: string }[] = [
+   252→      { id: `${module.id}-obj`, n: '🎯', label: t('theory.objectives') },
+   253→    ];
+   254→    module.theory.forEach((sec, i) => list.push({ id: `${module.id}-sec-${i}`, n: String(i + 1).padStart(2, '0'), label: sec.heading[lang] }));
+   255→    list.push({ id: `${module.id}-syntax`, n: '⌨', label: t('theory.syntax') });
+   256→    list.push({ id: `${module.id}-examples`, n: '💡', label: t('theory.examples') });
+   257→    list.push({ id: `${module.id}-mistakes`, n: '⚠', label: t('theory.mistakes') });
+   258→    return list;
+   259→  }, [module, lang, t]);
+   260→
+   261→  const activeId = useActiveSection(sections);
+   262→  const { resumeY, goToResume } = useResumeReading(module.id);
+   263→
+   264→  return (
+   265→    <div ref={contentRef}>
+   266→      <AnimatedTutorial module={module} />
+   267→
+   268→      {/* Editorial reading column (SQLBolt-style lesson page) */}
+   269→      <div className="max-w-3xl mx-auto">
+   270→
+   271→        {/* Sticky TOC + reading progress rail */}
+   272→        <div className="sticky top-[57px] z-30 -mx-2 px-2 py-2 bg-white/92 backdrop-blur border-b border-neutral-200/70 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+   273→          <div className="flex items-center gap-2">
+   274→            <div className="flex-1 min-w-0 flex gap-1.5 overflow-x-auto custom-scroll" role="navigation" aria-label={t('theory.goToSection')}>
+   275→              {sections.map((s) => (
+   276→                <button
+   277→                  key={s.id}
+   278→                  onClick={() => { document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+   279→                  title={s.label}
+   280→                  className={`shrink-0 inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3 py-1 text-[11px] font-semibold border transition whitespace-nowrap ${
+   281→                    activeId === s.id
+   282→                      ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
+   283→                      : 'bg-white border-neutral-200 text-neutral-600 hover:border-brand-300 hover:text-brand-700'
+   284→                  }`}
+   285→                >
+   286→                  <span className={activeId === s.id ? 'text-white/80' : 'text-neutral-400'}>{s.n}</span>
+   287→                  <span className="hidden md:inline max-w-[130px] truncate">{s.label}</span>
+   288→                </button>
+   289→              ))}
+   290→            </div>
+   291→            <span className="text-[10px] font-bold text-neutral-400 shrink-0 tabular-nums">{progressPct}% {t('theory.progress')}</span>
+   292→          </div>
+   293→          <div className="mt-1.5 h-1 rounded-full bg-neutral-100 overflow-hidden">
+   294→            <div className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-[width] duration-200" style={{ width: `${progressPct}%` }} />
+   295→          </div>
+   296→        </div>
+   297→
+   298→        {/* Lesson intro — "What you'll learn" callout (gray, SQLBolt style) */}
+   299→        <Reveal>
+   300→          <div id={`${module.id}-obj`} className="scroll-mt-[120px] mt-6 rounded-xl bg-neutral-100/90 p-5">
+   301→            <h4 className="text-[13px] font-bold text-neutral-800 mb-2.5">🎯 {t('theory.objectives')}</h4>
+   302→            <ul className="space-y-1.5">
+   303→              {module.learningObjectives[lang].map((o, i) => (
+   304→                <li key={i} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
+   305→                  <span className="text-brand-600 shrink-0 mt-0.5">▸</span>{o}
+   306→                </li>
+   307→              ))}
+   308→            </ul>
+   309→          </div>
+   310→        </Reveal>
+   311→
+   312→        {/* Theory sections — flat editorial prose, numbered H2 */}
+   313→        {module.theory.map((sec, i) => (
+   314→          <Reveal key={i}>
+   315→            <section id={`${module.id}-sec-${i}`} className="scroll-mt-[120px] pt-8 pb-7 border-t border-neutral-200 first:border-t-0">
+   316→              <div className="flex items-baseline gap-3 mb-4">
+   317→                <span className="font-heading font-bold text-brand-600 text-lg tabular-nums shrink-0">{i + 1}.</span>
+   318→                <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900 flex-1 min-w-0">{sec.heading[lang]}</h2>
+   319→                <span className="text-[11px] font-bold text-neutral-400 shrink-0 tabular-nums hidden sm:inline">~{estimateSectionMinutes(sec, lang)} {t('theory.minRead')}</span>
+   320→              </div>
+   321→              <div className="space-y-4">
+   322→                {sec.paragraphs[lang].map((p, j) => (
+   323→                  <p key={j} className="text-[15px] leading-7 text-neutral-800">{p}</p>
+   324→                ))}
+   325→              </div>
+   326→              {sec.bullets && (
+   327→                <div className="mt-5 rounded-xl bg-neutral-100/90 p-5">
+   328→                  <div className="text-[13px] font-bold text-neutral-800 mb-2.5">✓ {t('theory.keyPoints')}</div>
+   329→                  <ul className="space-y-1.5">
+   330→                    {sec.bullets[lang].map((b, j) => (
+   331→                      <li key={j} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
+   332→                        <span className="text-success-600 shrink-0 mt-0.5">✓</span>{b}
+   333→                      </li>
+   334→                    ))}
+   335→                  </ul>
+   336→                </div>
+   337→              )}
+   338→              {sec.diagram && (
+   339→                <div className="mt-5 rounded-xl border border-neutral-200 overflow-x-auto custom-scroll">
+   340→                  <Diagram kind={sec.diagram} />
+   341→                </div>
+   342→              )}
+   343→            </section>
+   344→          </Reveal>
+   345→        ))}
+   346→
+   347→        {/* Syntax — dark code block + parts */}
+   348→        <Reveal>
+   349→          <section id={`${module.id}-syntax`} className="scroll-mt-[120px] pt-8 pb-7 border-t border-neutral-200">
+   350→            <div className="flex items-baseline gap-3 mb-4">
+   351→              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">⌨</span>
+   352→              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.syntax')}</h2>
+   353→            </div>
+   354→            <SQLCode code={module.syntax.template} />
+   355→            <div className="mt-4 grid gap-2.5">
+   356→              {module.syntax.parts.map((p, i) => (
+   357→                <div key={i} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+   358→                  <code className={`sql-code font-bold shrink-0 ${i % 2 ? 'text-purple-700' : 'text-blue-700'}`}>{p.part}</code>
+   359→                  <span className="text-[14px] text-neutral-700 leading-relaxed">{p.description[lang]}</span>
+   360→                </div>
+   361→              ))}
+   362→            </div>
+   363→          </section>
+   364→        </Reveal>
+   365→
+   366→        {/* Examples */}
+   367→        <Reveal>
+   368→          <section id={`${module.id}-examples`} className="scroll-mt-[120px] pt-8 pb-7 border-t border-neutral-200">
+   369→            <div className="flex items-baseline gap-3 mb-4">
+   370→              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">💡</span>
+   371→              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.examples')}</h2>
+   372→            </div>
+   373→            <div className="divide-y divide-neutral-200 border-y border-neutral-200">
+   374→              {module.examples.map((ex, i) => (
+   375→                <ExampleRow key={i} query={ex.query} explanation={ex.explanation[lang]} tag={ex.tag} />
+   376→              ))}
+   377→            </div>
+   378→          </section>
+   379→        </Reveal>
+   380→
+   381→        {/* Common mistakes — amber editorial callout */}
+   382→        <Reveal>
+   383→          <section id={`${module.id}-mistakes`} className="scroll-mt-[120px] pt-8 pb-7 border-t border-neutral-200">
+   384→            <div className="flex items-baseline gap-3 mb-4">
+   385→              <span className="font-heading font-bold text-warning-600 text-lg shrink-0">⚠</span>
+   386→              <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.mistakes')}</h2>
+   387→            </div>
+   388→            <div className="space-y-4">
+   389→              {module.commonMistakes.map((m, i) => (
+   390→                <div key={i} className="rounded-xl border-l-4 border-warning-400 bg-warning-50/60 p-4 grid md:grid-cols-2 gap-3">
+   391→                  <div>
+   392→                    <div className="text-[11px] font-bold uppercase tracking-wide text-danger-600 mb-1">✗ {t('theory.mistake')}</div>
+   393→                    <p className="text-[14px] text-neutral-700 leading-relaxed">{m.mistake[lang]}</p>
+   394→                  </div>
+   395→                  <div>
+   396→                    <div className="text-[11px] font-bold uppercase tracking-wide text-success-600 mb-1">✓ {t('theory.fix')}</div>
+   397→                    <p className="text-[14px] text-neutral-700 leading-relaxed">{m.correction[lang]}</p>
+   398→                  </div>
+   399→                </div>
+   400→              ))}
+   401→            </div>
+   402→          </section>
+   403→        </Reveal>
+   404→
+   405→        {/* mark read */}
+   406→        <div className="flex justify-center py-8">
+   407→          <button
+   408→            onClick={onRead}
+   409→            disabled={theoryRead}
+   410→            className={`rounded-xl px-6 py-3 text-sm font-semibold transition inline-flex items-center gap-2 ${
+   411→              theoryRead ? 'bg-success-50 text-success-700 border border-success-300' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-md'
+   412→            }`}
+   413→          >
+   414→            <CheckCircle2 className="w-4 h-4" />
+   415→            {theoryRead ? t('module.theoryReadDone') : t('module.theoryRead')}
+   416→          </button>
+   417→        </div>
+   418→      </div>
+   419→
+   420→      {/* resume reading pill */}
+   421→      {resumeY !== null && (
+   422→        <button
+   423→          onClick={goToResume}
+   424→          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 inline-flex items-center gap-2 rounded-full bg-neutral-900/90 backdrop-blur text-white px-4 py-2.5 text-xs font-semibold shadow-lg hover:bg-neutral-800 transition"
+   425→        >
+   426→          <ArrowDown className="w-3.5 h-3.5" />
+   427→          {t('theory.resume')}
+   428→          <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+   429→        </button>
+   430→      )}
+   431→    </div>
+   432→  );
+   433→}
+   434→
+   435→// ---------- Reading-progress helpers ----------
+   436→function useReadingProgress(containerRef: React.RefObject<HTMLDivElement | null>) {
+   437→  const [pct, setPct] = useState(0);
+   438→  useEffect(() => {
+   439→    let raf = 0;
+   440→    const onScroll = () => {
+   441→      cancelAnimationFrame(raf);
+   442→      raf = requestAnimationFrame(() => {
+   443→        const el = containerRef.current;
+   444→        if (!el) return;
+   445→        const rect = el.getBoundingClientRect();
+   446→        const total = rect.height;
+   447→        if (total <= 0) return;
+   448→        const viewportBottom = window.innerHeight;
+   449→        const p = Math.min(1, Math.max(0, (viewportBottom - rect.top) / total));
+   450→        setPct(Math.round(p * 100));
+   451→      });
+   452→    };
+   453→    onScroll();
+   454→    window.addEventListener('scroll', onScroll, { passive: true });
+   455→    window.addEventListener('resize', onScroll);
+   456→    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
+   457→  }, [containerRef]);
+   458→  return pct;
+   459→}
+   460→
+   461→function useActiveSection(sections: { id: string }[]) {
+   462→  const ids = sections.map((s) => s.id);
+   463→  const key = ids.join('|');
+   464→  const [active, setActive] = useState(ids[0] ?? '');
+   465→  useEffect(() => {
+   466→    let raf = 0;
+   467→    const onScroll = () => {
+   468→      cancelAnimationFrame(raf);
+   469→      raf = requestAnimationFrame(() => {
+   470→        const line = window.scrollY + 160;
+   471→        let current = ids[0] ?? '';
+   472→        for (const id of ids) {
+   473→          const el = document.getElementById(id);
+   474→          if (el && el.getBoundingClientRect().top + window.scrollY <= line) current = id;
+   475→        }
+   476→        setActive(current);
+   477→      });
+   478→    };
+   479→    onScroll();
+   480→    window.addEventListener('scroll', onScroll, { passive: true });
+   481→    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+   482→  }, [key]);
+   483→  return active;
+   484→}
+   485→
+   486→function useResumeReading(moduleId: string) {
+   487→  // Lazy init from sessionStorage (client-only render — parent gates on `mounted`),
+   488→  // so no synchronous setState is needed inside an effect.
+   489→  const [resumeY, setResumeY] = useState<number | null>(() => {
+   490→    try {
+   491→      const saved = Number(sessionStorage.getItem(`theory-scroll:${moduleId}`) ?? '0');
+   492→      return saved > 600 ? saved : null;
+   493→    } catch { return null; }
+   494→  });
+   495→  useEffect(() => {
+   496→    let raf = 0;
+   497→    const onScroll = () => {
+   498→      cancelAnimationFrame(raf);
+   499→      raf = requestAnimationFrame(() => {
+   500→        try { sessionStorage.setItem(`theory-scroll:${moduleId}`, String(window.scrollY)); } catch { /* ignore */ }
+   501→      });
+   502→    };
+   503→    window.addEventListener('scroll', onScroll, { passive: true });
+   504→    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+   505→  }, [moduleId]);
+   506→  // auto-dismiss the pill after 10s so it never lingers
+   507→  useEffect(() => {
+   508→    if (resumeY === null) return;
+   509→    const timer = setTimeout(() => setResumeY(null), 10000);
+   510→    return () => clearTimeout(timer);
+   511→  }, [resumeY]);
+   512→  const goToResume = () => {
+   513→    if (resumeY === null) return;
+   514→    setResumeY(null);
+   515→    window.scrollTo({ top: resumeY, behavior: 'smooth' });
+   516→  };
+   517→  return { resumeY, goToResume };
+   518→}
+   519→
+   520→// Evaluated at client-bundle load; falls back to false during SSR/prerender.
+   521→const PREFERS_REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   522→
+   523→/** Subtle scroll-reveal (respects prefers-reduced-motion; content visible even if IO is unavailable). */
+   524→function Reveal({ children }: { children: React.ReactNode }) {
+   525→  const ref = useRef<HTMLDivElement>(null);
+   526→  const skip = PREFERS_REDUCED_MOTION || typeof IntersectionObserver === 'undefined';
+   527→  const [shown, setShown] = useState(skip);
+   528→  useEffect(() => {
+   529→    if (shown) return;
+   530→    const el = ref.current;
+   531→    if (!el) return;
+   532→    const io = new IntersectionObserver((entries) => {
+   533→      if (entries.some((e) => e.isIntersecting)) { setShown(true); io.disconnect(); }
+   534→    }, { rootMargin: '0px 0px -32px 0px', threshold: 0.03 });
+   535→    io.observe(el);
+   536→    return () => io.disconnect();
+   537→  }, [shown]);
+   538→  return (
+   539→    <div ref={ref} style={{ willChange: 'opacity, transform' }} className={`transition-[opacity,transform] duration-500 ease-out ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+   540→      {children}
+   541→    </div>
+   542→  );
+   543→}
+   544→
+   545→function estimateSectionMinutes(sec: Module['theory'][number], lang: 'en' | 'hi'): number {
+   546→  const words =
+   547→    sec.paragraphs[lang].join(' ').split(/\s+/).filter(Boolean).length +
+   548→    (sec.bullets?.[lang] ?? []).join(' ').split(/\s+/).filter(Boolean).length;
+   549→  return Math.max(1, Math.round(words / 180));
+   550→}
+   551→
+   552→function ExampleRow({ query, explanation, tag }: { query: string; explanation: string; tag: string }) {
+   553→  const [open, setOpen] = useState(false);
+   554→  const label = { very_easy: '★', easy: '★★', medium: '★★★', hard: '★★★★', very_hard: '★★★★★' }[tag] ?? '★';
+   555→  return (
+   556→    <div className="p-4">
+   557→      <button onClick={() => setOpen(!open)} className="w-full text-left flex items-center gap-2 group">
+   558→        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+   559→        <SQLChip code={query} />
+   560→        <span className="text-warning-500 text-[10px] shrink-0 ml-auto">{label}</span>
+   561→      </button>
+   562→      {open && (
+   563→        <p className="mt-3 pl-6 text-sm text-neutral-600 leading-relaxed border-l-2 border-brand-200">{explanation}</p>
+   564→      )}
+   565→    </div>
+   566→  );
+   567→}
+   568→
+   569→// ============ Summary tab ============
+   570→function SummaryTab({ module, onNavigate, nextUnlocked }: { module: Module; onNavigate: (r: string) => void; nextUnlocked: number | null }) {
+   571→  const t = useT();
+   572→  const lang = useLang();
+   573→  const mp = useProgressStore((s) => s.modules[module.id]);
+   574→  const passed = mp?.tasksCompleted ?? [];
+   575→  const quizBest = mp?.quizBestScore ?? null;
+   576→  const hintsUsed = Object.values(mp?.hintsUsed ?? {}).reduce((a, b) => a + b, 0);
+   577→  const tasksOk = passed.length >= Math.min(3, module.tasks.length);
+   578→  const quizOk = (quizBest ?? 0) >= 70;
+   579→  const completed = mp?.status === 'completed';
+   580→
+   581→  return (
+   582→    <div className="max-w-2xl mx-auto space-y-6 py-4">
+   583→      {completed && <Confetti onceKey={`celebrated:${module.id}`} />}
+   584→      <div className="text-center">
+   585→        <div className="text-4xl mb-2">{completed ? '🏆' : '🧭'}</div>
+   586→        <h2 className="font-heading text-xl font-bold text-neutral-800">{completed ? t('summary.completed') : t('summary.title')}</h2>
+   587→        {completed ? (
+   588→          <div className="mt-3 mx-auto max-w-md rounded-2xl bg-gradient-to-r from-brand-50 via-success-50 to-brand-50 border border-success-200 px-5 py-3">
+   589→            <p className="font-heading font-bold text-success-700">🎉 {t('summary.celebrate')}</p>
+   590→            <p className="text-xs text-neutral-600 mt-0.5">{t('summary.celebrateSub')}</p>
+   591→          </div>
+   592→        ) : (
+   593→          <p className="text-sm text-neutral-500 mt-1">{t('summary.notYet')}</p>
+   594→        )}
+   595→      </div>
+   596→
+   597→      {/* checklist */}
+   598→      <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm divide-y divide-neutral-100">
+   599→        <div className="px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('summary.checklist')}</div>
+   600→        <div className="flex items-center gap-3 p-4">
+   601→          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${tasksOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{tasksOk ? '✓' : '○'}</span>
+   602→          <span className="text-sm text-neutral-700">{t('summary.req.tasks')} <b className={tasksOk ? 'text-success-700' : 'text-neutral-500'}>({passed.length}/{module.tasks.length})</b></span>
+   603→        </div>
+   604→        <div className="flex items-center gap-3 p-4">
+   605→          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${quizOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{quizOk ? '✓' : '○'}</span>
+   606→          <span className="text-sm text-neutral-700">{t('summary.req.quiz')} <b className={quizOk ? 'text-success-700' : 'text-neutral-500'}>({quizBest ?? 0}%)</b></span>
+   607→        </div>
+   608→      </div>
+   609→
+   610→      {/* stats */}
+   611→      <div className="grid grid-cols-3 gap-3">
+   612→        <StatCard label={t('summary.stats.tasks')} value={`${passed.length}/${module.tasks.length}`} />
+   613→        <StatCard label={t('summary.stats.quiz')} value={`${quizBest ?? 0}%`} />
+   614→        <StatCard label={t('summary.stats.hints')} value={String(hintsUsed)} />
+   615→      </div>
+   616→
+   617→      {/* recap */}
+   618→      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+   619→        <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2">📚 {t('summary.recap')}</h4>
+   620→        <ul className="space-y-1.5">
+   621→          {module.summary[lang].map((s, i) => (
+   622→            <li key={i} className="text-sm text-neutral-700 flex gap-2"><span className="text-brand-500">▸</span>{s}</li>
+   623→          ))}
+   624→        </ul>
+   625→      </div>
+   626→
+   627→      {/* next module */}
+   628→      {nextUnlocked && (
+   629→        <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-4 flex items-center justify-between gap-3">
+   630→          <div>
+   631→            <div className="text-[10px] font-bold uppercase text-neutral-400">{t('summary.next')}</div>
+   632→            <div className="text-sm font-semibold text-neutral-800">M{nextUnlocked}: {MODULE_INDEX[nextUnlocked]?.titleEn}</div>
+   633→          </div>
+   634→          <button
+   635→            onClick={() => onNavigate(`/module/${nextUnlocked}`)}
+   636→            disabled={!completed}
+   637→            className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40 transition shrink-0"
+   638→          >
+   639→            {completed ? t('summary.next') : t('summary.nextLocked')}
+   640→          </button>
+   641→        </div>
+   642→      )}
+   643→    </div>
+   644→  );
+   645→}
+   646→
+   647→function StatCard({ label, value }: { label: string; value: string }) {
+   648→  return (
+   649→    <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+   650→      <div className="text-lg font-heading font-bold text-neutral-800">{value}</div>
+   651→      <div className="text-[10px] text-neutral-500 uppercase tracking-wide">{label}</div>
+   652→    </div>
+   653→  );
+   654→}
+   655→
+   656→/** One-shot, dependency-free CSS confetti burst (skipped under prefers-reduced-motion). */
+   657→function Confetti({ onceKey }: { onceKey: string }) {
+   658→  const [fire, setFire] = useState(false);
+   659→  useEffect(() => {
+   660→    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+   661→    let seen = false;
+   662→    try { seen = sessionStorage.getItem(onceKey) === '1'; } catch { /* private mode */ }
+   663→    if (!seen) {
+   664→      setFire(true);
+   665→      try { sessionStorage.setItem(onceKey, '1'); } catch { /* ignore */ }
+   666→    }
+   667→  }, [onceKey]);
+   668→  const pieces = useMemo(
+   669→    () =>
+   670→      Array.from({ length: 64 }, (_, i) => ({
+   671→        left: Math.random() * 100,
+   672→        delay: Math.random() * 0.9,
+   673→        dur: 2.4 + Math.random() * 1.8,
+   674→        color: ['#4f46e5', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7', '#ec4899'][i % 7],
+   675→        w: 5 + Math.random() * 5,
+   676→        round: Math.random() > 0.6,
+   677→      })),
+   678→    []
+   679→  );
+   680→  if (!fire) return null;
+   681→  return (
+   682→    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+   683→      <style>{`@keyframes sqlconf-fall{0%{transform:translateY(-8vh) rotate(0);opacity:1}100%{transform:translateY(108vh) rotate(660deg);opacity:.5}}`}</style>
+   684→      {pieces.map((p, i) => (
+   685→        <span
+   686→          key={i}
+   687→          style={{
+   688→            position: 'absolute',
+   689→            top: '-4vh',
+   690→            left: `${p.left}%`,
+   691→            width: p.w,
+   692→            height: p.w * (p.round ? 1 : 1.7),
+   693→            background: p.color,
+   694→            borderRadius: p.round ? '50%' : 2,
+   695→            animation: `sqlconf-fall ${p.dur}s ${p.delay}s cubic-bezier(.2,.5,.5,1) forwards`,
+   696→          }}
+   697→        />
+   698→      ))}
+   699→    </div>
+   700→  );
+   701→}
+   702→

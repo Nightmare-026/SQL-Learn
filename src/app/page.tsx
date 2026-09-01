@@ -2,16 +2,24 @@
 
 // ============ TopBar + hash router shell + all pages (single route app) ============
 
-import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle } from 'lucide-react';
-import { MODULE_INDEX, TOTAL_MODULES, TOTAL_TASKS, TOTAL_PROJECTS, loadProjects, LEVEL_META, levelOfModule, searchModules } from '@/lib/content/registry';
+import React, { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type ErrorInfo } from 'react';
+import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle, RotateCw } from 'lucide-react';
+import { MODULE_INDEX, TOTAL_MODULES, TOTAL_TASKS, TOTAL_PROJECTS, TOTAL_QUIZZES, loadProjects, LEVEL_META, levelOfModule, searchModules } from '@/lib/content/registry';
 import { useProgressStore, useProgressSummary } from '@/lib/progress/store';
 import { useLangStore, useLang, useT } from '@/lib/i18n/store';
 import { isModuleUnlocked } from '@/lib/progress/unlock';
 import { nextTargetModule } from '@/lib/progress/unlock';
 import { ModulePage } from '@/components/sqllearn/ModulePage';
-import { PracticeConsole } from '@/components/sqllearn/PracticeConsole';
+import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/LazyPracticeConsole';
+import { DbContext, ENGINE_LIMITS } from '@/lib/sql/engine';
+import { SQLChip, ResultTable } from '@/components/sqllearn/SQLDisplay';
+import { tokenizeSql } from '@/lib/sql/tokenizer';
+import { Loader2, Play, Trash2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 // ---------------- Router ----------------
 export default function App() {
@@ -23,7 +31,15 @@ export default function App() {
     const apply = () => setRoute(window.location.hash.slice(1) || '/');
     apply();
     window.addEventListener('hashchange', apply);
-    return () => window.removeEventListener('hashchange', apply);
+    // Surface uncaught async failures as a toast instead of silence.
+    const onReject = (e: PromiseRejectionEvent) => {
+      console.warn('Unhandled rejection:', e.reason);
+    };
+    window.addEventListener('unhandledrejection', onReject);
+    return () => {
+      window.removeEventListener('hashchange', apply);
+      window.removeEventListener('unhandledrejection', onReject);
+    };
   }, []);
 
   const navigate = useCallback((r: string) => {
@@ -40,11 +56,47 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-neutral-50">
       <TopBar route={route} onNavigate={navigate} />
       <main className="flex-1 w-full">
-        <PageRouter route={route} onNavigate={navigate} />
+        <AppErrorBoundary>
+          <PageRouter route={route} onNavigate={navigate} />
+        </AppErrorBoundary>
       </main>
       <Footer />
     </div>
   );
+}
+
+// ---------------- Error boundary (graceful crash, never a white screen) ----------------
+class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Render crash:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      const lang = useLangStore.getState().lang;
+      const L = (en: string, hi: string) => (lang === 'hi' ? hi : en);
+      return (
+        <div className="max-w-xl mx-auto px-4 py-24 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-danger-50 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-7 h-7 text-danger-500" />
+          </div>
+          <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{L('Something went wrong', 'Kuch galat ho gaya')}</h2>
+          <p className="text-sm text-neutral-600 mb-2">
+            {L('An unexpected error occurred. Your progress is safe — reload the page to continue.', 'Achanak koi error aaya. Aapka progress safe hai — page reload karke continue karo.')}
+          </p>
+          <p className="text-[11px] text-neutral-400 mb-6 break-words max-w-md mx-auto">{this.state.error.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
+          >
+            <RotateCw className="w-4 h-4" /> {L('Reload page', 'Page reload karo')}
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function PageRouter({ route, onNavigate }: { route: string; onNavigate: (r: string) => void }) {
@@ -55,7 +107,7 @@ function PageRouter({ route, onNavigate }: { route: string; onNavigate: (r: stri
   if (moduleMatch) return <ModulePage moduleNumber={Number(moduleMatch[1])} onNavigate={onNavigate} />;
   if (route === '/projects') return <ProjectsPage onNavigate={onNavigate} />;
   const projectMatch = route.match(/^\/project\/([\w-]+)$/);
-  if (projectMatch) return <ProjectPage projectId={projectMatch[1]} onNavigate={onNavigate} />;
+  if (projectMatch) return <ProjectPage key={projectMatch[1]} projectId={projectMatch[1]} onNavigate={onNavigate} />;
   if (route === '/search') return <SearchPage onNavigate={onNavigate} />;
   if (route === '/sandbox') return <SandboxPage />;
   if (route === '/settings') return <SettingsPage />;
@@ -293,7 +345,9 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
                 <div>📄 students</div><div>📄 teachers</div><div>📄 courses</div>
               </div>
               <div className="p-3">
-                <pre className="sql-code text-neutral-200 whitespace-pre-wrap"><span className="tok-keyword">SELECT</span> name, city\n<span className="tok-keyword">FROM</span> students\n<span className="tok-keyword">WHERE</span> city = <span className="tok-string">&apos;Delhi&apos;</span>;</pre>
+                <pre className="sql-code text-neutral-200 whitespace-pre-wrap">{`SELECT name, city
+FROM students
+WHERE city = 'Delhi';`}</pre>
                 <div className="mt-3 rounded-lg bg-neutral-800/70 p-2 sql-code text-green-300">✓ 7 rows · 0.8ms</div>
               </div>
             </div>
@@ -307,9 +361,9 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
           {[
             [TOTAL_MODULES, t('stats.modules')],
             [TOTAL_TASKS, t('stats.tasks')],
-            [240, t('stats.quiz')],
+            [TOTAL_QUIZZES, t('stats.quiz')],
             [TOTAL_PROJECTS, t('stats.projects')],
-            [900, t('stats.hints')],
+            [TOTAL_TASKS * 3, t('stats.hints')],
           ].map(([n, label]) => (
             <div key={label as string}>
               <div className="font-heading text-2xl font-bold text-brand-600">{n}</div>
@@ -385,7 +439,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   const targetEntry = MODULE_INDEX[target];
 
   const visibleModules = useMemo(() => {
-    const list = [];
+    const list: number[] = [];
     for (let n = 1; n <= 60; n++) {
       if (isModuleUnlocked(n, progress)) {
         list.push(n);
@@ -404,8 +458,8 @@ function DashboardPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   };
 
   const stats = [
-    { icon: BookOpen, label: t('dash.modulesDone'), value: `${summary.modulesCompleted}/60` },
-    { icon: Terminal, label: t('dash.tasksDone'), value: `${summary.tasksCompleted}/316` },
+    { icon: BookOpen, label: t('dash.modulesDone'), value: `${summary.modulesCompleted}/${TOTAL_MODULES}` },
+    { icon: Terminal, label: t('dash.tasksDone'), value: `${summary.tasksCompleted}/${TOTAL_TASKS}` },
     { icon: TrendingUp, label: t('dash.queries'), value: String(summary.queriesRun) },
   ];
 
@@ -507,10 +561,31 @@ function ProjectsPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   const t = useT();
   const lang = useLang();
   const [projects, setProjects] = useState<Awaited<ReturnType<typeof loadProjects>> | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const progress = useProgressStore();
 
-  useEffect(() => { loadProjects().then(setProjects); }, []);
+  useEffect(() => {
+    let alive = true;
+    loadProjects()
+      .then((p) => { if (alive) setProjects(p); })
+      .catch(() => { if (alive) setLoadError(true); });
+    return () => { alive = false; };
+  }, []);
 
+  if (loadError) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-danger-50 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-7 h-7 text-danger-500" />
+        </div>
+        <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('error.projectLoad.title')}</h2>
+        <p className="text-sm text-neutral-600 mb-6">{t('error.moduleLoad.desc')}</p>
+        <button onClick={() => { setLoadError(false); loadProjects().then(setProjects).catch(() => setLoadError(true)); }} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">
+          <RotateCw className="w-4 h-4" /> {t('common.retry')}
+        </button>
+      </div>
+    );
+  }
   if (!projects) {
     return <div className="max-w-5xl mx-auto px-4 py-24 text-center"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>;
   }
@@ -570,15 +645,23 @@ function ProjectPage({ projectId, onNavigate }: { projectId: string; onNavigate:
   const recordProjectTask = useProgressStore((s) => s.recordProjectTask);
   const bumpStats = useProgressStore((s) => s.bumpStats);
 
-  useEffect(() => { loadProjects().then(setProjects); }, []);
+  useEffect(() => {
+    let alive = true;
+    loadProjects()
+      .then((p) => { if (alive) setProjects(p); })
+      .catch(() => { if (alive) setProjects([]); });
+    return () => { alive = false; };
+  }, []);
+  // NOTE: task selection resets naturally — PageRouter renders this component
+  // with key={projectId}, so switching projects remounts it with fresh state.
   if (!projects) return <div className="max-w-5xl mx-auto px-4 py-24 text-center"><div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>;
   const project = projects.find((p) => p.id === projectId);
-  if (!project) return <div className="max-w-3xl mx-auto px-4 py-24 text-center text-neutral-500">Project not found</div>;
+  if (!project) return <div className="max-w-3xl mx-auto px-4 py-24 text-center text-neutral-500">{t('projects.notFound')}</div>;
   if (!isModuleUnlocked(project.moduleNumber, progress)) {
     return (
       <div className="max-w-xl mx-auto px-4 py-24 text-center">
         <Lock className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-        <p className="text-sm text-neutral-600">Unlock module {project.moduleNumber} to access this project.</p>
+        <p className="text-sm text-neutral-600">{t('projects.lockedDesc').replace('{n}', String(project.moduleNumber))}</p>
       </div>
     );
   }
@@ -612,22 +695,27 @@ function ProjectPage({ projectId, onNavigate }: { projectId: string; onNavigate:
       </div>
 
       <div className="h-[calc(100vh-330px)] min-h-[480px] rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
-        <PracticeConsole
-          dataset={project.dataset}
-          driver={{
-            tasks: project.tasks as never,
-            taskIndex: activeIdx,
-            setTaskIndex: setTaskIdx,
-            onTaskPassed: (taskId) => recordProjectTask(project.id, taskId),
-            onTaskSkipped: () => {},
-            onHintsUsed: (taskId, count) => { bumpStats({ totalHintsUsed: count }); },
-            completedTasks: pp.tasksCompleted,
-            skippedTasks: [],
-            hintsUsed: {},
-            datasetLabel: project.dataset,
-          }}
-          onQueryRun={() => bumpStats({ totalQueriesRun: 1 })}
-        />
+        <ConsoleSuspense label={t('common.loading')}>
+          <LazyPracticeConsole
+            dataset={project.dataset}
+            driver={{
+              tasks: project.tasks as never,
+              taskIndex: activeIdx,
+              setTaskIndex: setTaskIdx,
+              onTaskPassed: (taskId) => recordProjectTask(project.id, taskId),
+              onTaskSkipped: () => {},
+              onHintsUsed: (taskId, count) => {
+                // Only newly revealed hints count toward the stats total.
+                bumpStats({ totalHintsUsed: 1 });
+              },
+              completedTasks: pp.tasksCompleted,
+              skippedTasks: [],
+              hintsUsed: {},
+              datasetLabel: project.dataset,
+            }}
+            onQueryRun={() => bumpStats({ totalQueriesRun: 1 })}
+          />
+        </ConsoleSuspense>
       </div>
 
       {pp.status === 'completed' && (
@@ -747,8 +835,8 @@ function SandboxPage() {
           {confirmReset ? (
             <span className="flex items-center gap-2 text-xs">
               <span className="text-neutral-600">{t('sandbox.resetConfirm')}</span>
-              <button onClick={() => { setKey((k) => k + 1); setConfirmReset(false); toast.success('Database reset'); }} className="rounded-lg bg-danger-600 px-3 py-1 text-white font-semibold hover:bg-danger-700 transition">Yes, reset</button>
-              <button onClick={() => setConfirmReset(false)} className="rounded-lg border border-neutral-300 px-3 py-1 text-neutral-600">No</button>
+              <button onClick={() => { setKey((k) => k + 1); setConfirmReset(false); toast.success(t('common.resetDone')); }} className="rounded-lg bg-danger-600 px-3 py-1 text-white font-semibold hover:bg-danger-700 transition">{t('common.yes')}</button>
+              <button onClick={() => setConfirmReset(false)} className="rounded-lg border border-neutral-300 px-3 py-1 text-neutral-600">{t('common.no')}</button>
             </span>
           ) : (
             <button onClick={() => setConfirmReset(true)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-danger-400 hover:text-danger-600 transition">
@@ -766,8 +854,6 @@ function SandboxPage() {
 }
 
 function SandboxConsole({ dataset }: { dataset: string }) {
-  // free-run console: no task driver → pass empty tasks and use driver-less mode
-  const freeDriver: never[] = [];
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-2.5 border-b border-neutral-200 bg-white rounded-t-2xl text-sm font-semibold text-neutral-700">
@@ -780,43 +866,74 @@ function SandboxConsole({ dataset }: { dataset: string }) {
   );
 }
 
-import { DbContext } from '@/lib/sql/engine';
-import { SQLChip, ResultTable } from '@/components/sqllearn/SQLDisplay';
-import { tokenizeSql } from '@/lib/sql/tokenizer';
-import { Loader2, Play, Trash2, Copy } from 'lucide-react';
-
 function SandboxRunner({ dataset }: { dataset: string }) {
   const t = useT();
   const ctxRef = useRef<DbContext | null>(null);
   const [query, setQuery] = useState('SELECT name FROM sqlite_master WHERE type=\'table\';');
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [runState, setRunState] = useState<{ kind: 'idle' | 'running' | 'result' | 'error'; result?: any; error?: string; ms?: number; rows?: number }>({ kind: 'idle' });
   const textRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
+    let alive = true;
     const ctx = new DbContext(dataset as never);
     ctxRef.current = ctx;
-    ctx.ensure().then(() => setReady(true));
+    ctx
+      .ensure()
+      .then(() => { if (alive) setReady(true); })
+      .catch((e: unknown) => { if (alive) setInitError(e instanceof Error ? e.message : String(e)); });
+    return () => { alive = false; };
+  }, [dataset]);
+
+  const retryInit = useCallback(() => {
+    const ctx = new DbContext(dataset as never);
+    ctxRef.current = ctx;
+    setInitError(null);
+    setReady(false);
+    ctx
+      .ensure()
+      .then(() => setReady(true))
+      .catch((e: unknown) => setInitError(e instanceof Error ? e.message : String(e)));
   }, [dataset]);
 
   const run = async () => {
     if (!ctxRef.current || !query.trim() || runState.kind === 'running') return;
     setRunState({ kind: 'running' });
-    const out = await ctxRef.current.run(query);
-    if (out.ok) {
-      setRunState({ kind: 'result', result: out.result, ms: out.elapsedMs, rows: out.result?.rows.length ?? 0 });
-      if (out.mutated) { await ctxRef.current.ensure(); }
-    } else {
-      setRunState({ kind: 'error', error: out.error });
+    try {
+      const out = await ctxRef.current.run(query);
+      if (out.ok) {
+        setRunState({ kind: 'result', result: out.result, ms: out.elapsedMs, rows: out.result?.rows.length ?? 0 });
+        if (out.mutated) { await ctxRef.current.ensure(); }
+      } else {
+        setRunState({ kind: 'error', error: out.error });
+      }
+    } catch (e) {
+      setRunState({ kind: 'error', error: e instanceof Error ? e.message : String(e) });
     }
   };
 
   const hlHtml = useMemo(() => {
     const tokens = tokenizeSql(query);
-    return tokens.map((tk) => tk.cls ? `<span class="${tk.cls}">${tk.text.replace(/&/g, '&amp;')}</span>` : tk.text).join('');
+    return tokens.map((tk) => tk.cls ? `<span class="${tk.cls}">${escapeHtml(tk.text)}</span>` : escapeHtml(tk.text)).join('');
   }, [query]);
 
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center h-full">
+        <div className="w-12 h-12 rounded-2xl bg-danger-50 flex items-center justify-center">
+          <AlertTriangle className="w-6 h-6 text-danger-600" />
+        </div>
+        <p className="text-sm font-bold text-danger-700">{t('error.dbLoad.title')}</p>
+        <p className="text-xs text-neutral-500 max-w-md leading-relaxed">{t('error.dbLoad.desc')}</p>
+        <p className="text-[11px] text-neutral-400 max-w-md break-words">{initError}</p>
+        <button onClick={retryInit} className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">
+          <RotateCw className="w-3.5 h-3.5" /> {t('common.retry')}
+        </button>
+      </div>
+    );
+  }
   if (!ready) return <div className="flex items-center justify-center h-full"><Loader2 className="w-5 h-5 animate-spin text-brand-500" /></div>;
 
   return (
@@ -838,7 +955,14 @@ function SandboxRunner({ dataset }: { dataset: string }) {
           <Play className="w-3.5 h-3.5" /> {t('console.run')}
         </button>
         <button onClick={() => setQuery('')} className="rounded-lg border border-neutral-300 bg-white p-1.5 text-neutral-600 hover:border-neutral-400 transition"><Trash2 className="w-3.5 h-3.5" /></button>
-        <button onClick={() => { navigator.clipboard?.writeText(query); toast.success(t('console.copied')); }} className="rounded-lg border border-neutral-300 bg-white p-1.5 text-neutral-600 hover:border-neutral-400 transition"><Copy className="w-3.5 h-3.5" /></button>
+        <button onClick={async () => {
+                try {
+                  await navigator.clipboard?.writeText(query);
+                  toast.success(t('console.copied'));
+                } catch {
+                  toast.error(t('common.copyFail'));
+                }
+              }} className="rounded-lg border border-neutral-300 bg-white p-1.5 text-neutral-600 hover:border-neutral-400 transition"><Copy className="w-3.5 h-3.5" /></button>
         <div className="ml-auto text-xs text-neutral-500">
           {runState.kind === 'result' && `${runState.rows} rows · ${runState.ms?.toFixed(1)}ms`}
         </div>
@@ -901,9 +1025,9 @@ function SettingsPage() {
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h3 className="font-heading font-bold text-sm text-neutral-800 mb-3">📊 {t('settings.stats')}</h3>
         <div className="grid grid-cols-4 gap-3 text-center">
-          <Stat label="Queries" value={stats.totalQueriesRun} />
-          <Stat label="Tasks" value={stats.totalTasksCompleted} />
-          <Stat label="Hints" value={stats.totalHintsUsed} />
+          <Stat label={t('dash.queries')} value={stats.totalQueriesRun} />
+          <Stat label={t('dash.tasksDone')} value={stats.totalTasksCompleted} />
+          <Stat label={t('summary.stats.hints')} value={stats.totalHintsUsed} />
           <Stat label={t('settings.timeSpent')} value={`${Math.floor(stats.timeSpentSeconds / 60)}m`} />
         </div>
       </section>
@@ -914,18 +1038,31 @@ function SettingsPage() {
         <p className="text-xs text-neutral-500 mb-3">{t('settings.backup.desc')}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           <button
-            onClick={() => { navigator.clipboard?.writeText(exportState()); setCopied(true); toast.success('Backup code copied'); setTimeout(() => setCopied(false), 2000); }}
+            onClick={async () => {
+              try {
+                await navigator.clipboard?.writeText(exportState());
+                setCopied(true);
+                toast.success(t('common.backupCopied'));
+                setTimeout(() => setCopied(false), 2000);
+              } catch {
+                toast.error(t('common.copyFail'));
+              }
+            }}
             className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:border-brand-400 transition"
           >
-            {copied ? '✓ Copied' : `📋 ${t('settings.copy')}`}
+            {copied ? `✓ ${t('common.copied')}` : `📋 ${t('settings.copy')}`}
           </button>
           <button
             onClick={() => {
-              const blob = new Blob([exportState()], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url; a.download = 'sql-learn-backup.json'; a.click();
-              URL.revokeObjectURL(url);
+              try {
+                const blob = new Blob([exportState()], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'sql-learn-backup.json'; a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              } catch {
+                toast.error(t('common.copyFail'));
+              }
             }}
             className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 hover:border-brand-400 transition"
           >
@@ -961,8 +1098,8 @@ function SettingsPage() {
         {confirmReset ? (
           <div className="flex items-center gap-2 mt-3 text-xs">
             <span className="text-danger-800">{t('settings.resetConfirm')}</span>
-            <button onClick={() => { resetAll(); toast.success('Progress reset'); setConfirmReset(false); }} className="rounded-lg bg-danger-600 px-3 py-1 text-white font-semibold hover:bg-danger-700 transition">Yes, delete everything</button>
-            <button onClick={() => setConfirmReset(false)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-neutral-600">Cancel</button>
+            <button onClick={() => { resetAll(); toast.success(t('common.progressReset')); setConfirmReset(false); }} className="rounded-lg bg-danger-600 px-3 py-1 text-white font-semibold hover:bg-danger-700 transition">{t('common.yes')}</button>
+            <button onClick={() => setConfirmReset(false)} className="rounded-lg border border-neutral-300 bg-white px-3 py-1 text-neutral-600">{t('common.cancel')}</button>
           </div>
         ) : (
           <button onClick={() => setConfirmReset(true)} className="mt-3 rounded-xl border border-danger-300 bg-white px-4 py-2 text-xs font-semibold text-danger-700 hover:bg-danger-100 transition">

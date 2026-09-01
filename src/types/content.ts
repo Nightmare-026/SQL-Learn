@@ -212,7 +212,7 @@ export interface Project {
 
 export interface ProjectTask {
   id: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'expert';
+  difficulty: TaskDifficulty;
   businessContext: Localized;
   taskDescription: Localized;
   solution: string;

@@ -35,7 +35,7 @@ export const modules: Module[] = [
           ['The advanced tables reward joins across domains', 'Advanced tables domains ke paar joins ka inaam deti hain'],
           ['6 tasks · any 3 + quiz to advance', '6 tasks · koi bhi 3 + quiz aage badhne ke liye'],
         ],
-        []
+        'window-frame'
       ),
     ],
     tutorial: {

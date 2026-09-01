@@ -18,7 +18,9 @@ export interface ModuleIndexEntry {
 }
 
 export const TOTAL_MODULES = 60;
-export const TOTAL_TASKS = 300;
+/** Derived from the curriculum index (stays in sync with authored content). */
+export const TOTAL_TASKS = Object.values(CURRICULUM_INDEX).reduce((a, e) => a + e.taskCount, 0);
+export const TOTAL_QUIZZES = Object.values(CURRICULUM_INDEX).reduce((a, e) => a + (e.hasQuiz ? 1 : 0), 0) * 4; // 4 questions per quiz
 export const TOTAL_PROJECTS = 10;
 
 export function levelOfModule(n: number): ModuleLevel {

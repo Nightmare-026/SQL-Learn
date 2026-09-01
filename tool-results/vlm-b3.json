@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Image 1: EXISTS yes, CLEAN\nImage 2: EXISTS yes, CLEAN\nImage 3: EXISTS yes, CLEAN\nImage 4: EXISTS yes, CLEAN",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1788260298,
+  "id": "20260901185807ca98b5c49fbd4d07",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20260901185807ca98b5c49fbd4d07",
+  "usage": {
+    "completion_tokens": 36,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 23033,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 23069
+  }
+}

@@ -262,7 +262,7 @@ export const modules: Module[] = [
           ['Result validation, not text matching', 'Result validation, text matching nahi'],
           ['3/5 tasks + 70% quiz = level complete', '3/5 tasks + 70% quiz = level complete'],
         ],
-        []
+        'limit-paginate'
       ),
       section(
         ['What "report quality" means', 'Report quality ka matlab'],

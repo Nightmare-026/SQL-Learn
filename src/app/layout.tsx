@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "SQL Learn — Master SQL from Zero to Expert",
   description:
-    "A complete, free, browser-based SQL learning platform. 60 structured modules, 300 interactive practice tasks, real query validation, and industry-level projects — no signup, no servers, no payment.",
+    "A complete, free, browser-based SQL learning platform. 60 structured modules, 316 interactive practice tasks, real query validation, and industry-level projects — no signup, no servers, no payment.",
   keywords: ["SQL", "learn SQL", "SQLite", "practice queries", "SQL tutorial", "database"],
   icons: { icon: "/favicon.svg" },
 };

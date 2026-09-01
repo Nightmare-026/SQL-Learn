@@ -1,9 +1,22 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import type { Lang } from '@/types/content';
 import { ui } from '@/content/locales';
+
+/** localStorage can throw (private mode / quota) — degrade to memory only. */
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => {
+    try { return localStorage.getItem(name); } catch { return null; }
+  },
+  setItem: (name, value) => {
+    try { localStorage.setItem(name, value); } catch { /* noop */ }
+  },
+  removeItem: (name) => {
+    try { localStorage.removeItem(name); } catch { /* noop */ }
+  },
+};
 
 interface LangStore {
   lang: Lang;
@@ -18,7 +31,7 @@ export const useLangStore = create<LangStore>()(
       setLang: (lang) => set({ lang }),
       toggle: () => set({ lang: get().lang === 'en' ? 'hi' : 'en' }),
     }),
-    { name: 'sqlLearnLang', storage: createJSONStorage(() => localStorage) }
+    { name: 'sqlLearnLang', storage: createJSONStorage(() => safeLocalStorage) }
   )
 );
 

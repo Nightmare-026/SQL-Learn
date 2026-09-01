@@ -269,7 +269,7 @@ export const modules: Module[] = [
           ['Name the metric and grain BEFORE writing', 'Likne se PEHLE metric aur grain ka naam lo'],
           ['10 tasks · pass any 3 + the quiz to level up', '10 tasks · koi bhi 3 + quiz se level up'],
         ],
-        []
+        'cte-chain'
       ),
       section(
         ['What unlocks next', 'Aage kya khulta hai'],

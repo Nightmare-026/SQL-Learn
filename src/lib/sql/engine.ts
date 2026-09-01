@@ -1,12 +1,44 @@
 'use client';
 
-import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
+import type { Database as SqlJsDatabase } from 'sql.js';
 import type { Cell, DatasetId, QueryResult } from '@/types/content';
 
 // ============ sql.js engine singleton (spec §4, §8) ============
+// sql.js is loaded via dynamic import so the JS wrapper stays OUT of the
+// initial page bundle — it is only fetched when a query console first runs.
 
-let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
-let initPromise: Promise<Awaited<ReturnType<typeof initSqlJs>>> | null = null;
+type SqlJs = { Database: new (data?: ArrayBuffer) => SqlJsDatabase };
+
+let SQL: SqlJs | null = null;
+let initPromise: Promise<SqlJs> | null = null;
+
+/** Hard limits — protect the UI thread from pathological user input. */
+export const ENGINE_LIMITS = {
+  maxQueryChars: 100_000,   // ~100 KB of SQL text per run
+  maxStatements: 500,       // statements per script
+} as const;
+
+export class EngineError extends Error {
+  constructor(message: string, readonly code: 'LOAD_FAILED' | 'TOO_LARGE' | 'SEED_FAILED') {
+    super(message);
+    this.name = 'EngineError';
+  }
+}
+
+export async function getSqlJs(): Promise<SqlJs> {
+  if (SQL) return SQL;
+  if (!initPromise) {
+    initPromise = (async () => {
+      const { default: initSqlJs } = await import('sql.js');
+      const sql = await initSqlJs({ locateFile: (f) => `/sql-wasm/${f}` });
+      SQL = sql as unknown as SqlJs;
+      return SQL;
+    })();
+    // Never cache a rejection: allow a retry after a transient WASM failure.
+    initPromise.catch(() => { initPromise = null; });
+  }
+  return initPromise;
+}
 
 const seedPromises: Partial<Record<DatasetId, Promise<string>>> = {};
 
@@ -29,34 +61,32 @@ async function loadSeed(dataset: DatasetId): Promise<string> {
   return seedPromises[dataset]!;
 }
 
-export async function getSqlJs() {
-  if (SQL) return SQL;
-  if (!initPromise) {
-    initPromise = initSqlJs({ locateFile: (f) => `/sql-wasm/${f}` }).then((sql) => {
-      SQL = sql;
-      return sql;
-    });
-  }
-  return initPromise;
-}
-
 /** Create a fresh database seeded with the given dataset. */
 export async function createSeededDb(dataset: DatasetId): Promise<SqlJsDatabase> {
-  const [SQL, seed] = await Promise.all([getSqlJs(), loadSeed(dataset)]);
-  const db = new SQL.Database();
+  let SqlJsCtor: SqlJs;
+  let seed: string;
+  try {
+    [SqlJsCtor, seed] = await Promise.all([getSqlJs(), loadSeed(dataset)]);
+  } catch (e) {
+    throw new EngineError(
+      e instanceof EngineError ? e.message : `Failed to load the SQL engine (${e instanceof Error ? e.message : String(e)})`,
+      'LOAD_FAILED'
+    );
+  }
+  const db = new SqlJsCtor.Database();
   db.exec('PRAGMA foreign_keys = ON;');
   try {
     db.exec(seed);
   } catch (e) {
-    // eslint-disable-next-line no-console
+    db.close();
     console.error(`Seed error for ${dataset}:`, e);
-    throw e;
+    throw new EngineError(`Dataset "${dataset}" failed to initialize: ${e instanceof Error ? e.message : String(e)}`, 'SEED_FAILED');
   }
   return db;
 }
 
 /** Fast snapshot/clone of a database (for isolated validation runs). */
-export function cloneDb(db: SqlJsDatabase, SqlJsCtor: Awaited<ReturnType<typeof initSqlJs>>): SqlJsDatabase {
+export function cloneDb(db: SqlJsDatabase, SqlJsCtor: SqlJs): SqlJsDatabase {
   return new SqlJsCtor.Database(db.export());
 }
 
@@ -101,6 +131,9 @@ function tryPrepare(db: SqlJsDatabase, query: string): QueryResult | null {
 
 export function exec(db: SqlJsDatabase, query: string): ExecOutcome {
   const t0 = performance.now();
+  if (query.length > ENGINE_LIMITS.maxQueryChars) {
+    return { ok: false, error: `Query too large (${query.length.toLocaleString()} chars > ${ENGINE_LIMITS.maxQueryChars.toLocaleString()} limit)`, elapsedMs: 0 };
+  }
   try {
     const stmts = db.exec(query);
     const elapsedMs = performance.now() - t0;
@@ -210,7 +243,13 @@ export interface ScriptResult {
 /** Run a multi-statement script, continuing past errors (for DDL practice). */
 export function execScript(db: SqlJsDatabase, script: string): ScriptResult {
   const t0 = performance.now();
+  if (script.length > ENGINE_LIMITS.maxQueryChars) {
+    return { lastResult: null, lastStatement: '', errors: [{ statement: '', error: `Script too large (${script.length.toLocaleString()} chars > limit)` }], hadErrors: true, elapsedMs: 0, mutated: false };
+  }
   const statements = splitSql(script);
+  if (statements.length > ENGINE_LIMITS.maxStatements) {
+    return { lastResult: null, lastStatement: '', errors: [{ statement: '', error: `Too many statements (${statements.length} > ${ENGINE_LIMITS.maxStatements} limit)` }], hadErrors: true, elapsedMs: 0, mutated: false };
+  }
   const errors: { statement: string; error: string }[] = [];
   let lastResult: QueryResult | null = null;
   let lastStatement = '';
@@ -326,7 +365,7 @@ export function previewTable(db: SqlJsDatabase, table: string, limit = 50): Quer
  */
 export class DbContext {
   private db: SqlJsDatabase | null = null;
-  private SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
+  private SQL: SqlJs | null = null;
   readonly dataset: DatasetId;
 
   constructor(dataset: DatasetId) {
