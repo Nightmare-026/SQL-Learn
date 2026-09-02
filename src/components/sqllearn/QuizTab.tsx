@@ -3,7 +3,7 @@
 // ============ Quiz engine: 4 question types (spec §13) ============
 
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Trophy, BookOpen, ClipboardList, AlertTriangle } from 'lucide-react';
 import type { Module, QuizQuestion } from '@/types/content';
 import { SQLChip, ResultTable } from './SQLDisplay';
 import { useProgressStore } from '@/lib/progress/store';
@@ -47,7 +47,9 @@ export function QuizTab({ module, onScore }: { module: Module; onScore: (scorePc
   if (phase === 'intro') {
     return (
       <div className="max-w-xl mx-auto text-center py-12 px-4">
-        <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
+        <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
+          <ClipboardList className="w-7 h-7 text-brand-600" aria-hidden="true" />
+        </div>
         <h3 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('quiz.intro.title')} — {module.title[useProgressStore.getState().language]}</h3>
         <p className="text-sm text-neutral-600 mb-6">{t('quiz.intro.desc')}</p>
         <button
@@ -64,7 +66,9 @@ export function QuizTab({ module, onScore }: { module: Module; onScore: (scorePc
     const pct = Math.round((correct / questions.length) * 100);
     return (
       <div className="max-w-xl mx-auto text-center py-12 px-4">
-        <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4 text-3xl">{pct >= 70 ? '🏆' : '📚'}</div>
+        <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
+          {pct >= 70 ? <Trophy className="w-8 h-8 text-success-600" aria-hidden="true" /> : <BookOpen className="w-8 h-8 text-brand-600" aria-hidden="true" />}
+        </div>
         <h3 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('quiz.results')}</h3>
         <div className="text-4xl font-heading font-bold mb-1" style={{ color: pct >= 70 ? '#059669' : '#D97706' }}>{pct}%</div>
         <p className="text-sm text-neutral-600 mb-6">{correct}/{questions.length} · {pct >= 70 ? t('quiz.passed') : t('quiz.failed')}</p>
@@ -113,35 +117,75 @@ function QuestionCard({ q, answered, wasRight, onAnswer }: { q: QuizQuestion; an
   }
 }
 
-// ---------- MCQ ----------
+// ---------- MCQ — ARIA radiogroup semantics + arrow/number-key navigation ----------
 function MCQ({ q, answered, wasRight, onAnswer, lang }: any) {
   const [picked, setPicked] = useState<number | null>(null);
+  const optRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
+
+  const pick = (i: number) => {
+    if (answered) return;
+    setPicked(i);
+    onAnswer(i === q.correctIndex);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent, i: number) => {
+    if (answered) return;
+    const count = q.options.length;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      optRefs.current[(i + 1) % count]?.focus();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      optRefs.current[(i - 1 + count) % count]?.focus();
+    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= count) {
+      e.preventDefault();
+      pick(Number(e.key) - 1);
+      optRefs.current[Number(e.key) - 1]?.focus();
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm p-5">
       <p className="text-sm font-semibold text-neutral-800 mb-4 leading-relaxed">{q.question[lang]}</p>
-      <div className="space-y-2">
+      <div
+        role="radiogroup"
+        aria-label={q.question[lang]}
+        className="space-y-2"
+      >
         {q.options.map((opt: any, i: number) => {
           const isPicked = picked === i;
           const isCorrect = i === q.correctIndex;
           return (
             <button
               key={i}
+              ref={(el) => { optRefs.current[i] = el; }}
+              role="radio"
+              aria-checked={isPicked}
               disabled={answered}
-              onClick={() => { setPicked(i); onAnswer(isCorrect); }}
+              onClick={() => pick(i)}
+              onKeyDown={(e) => onKeyDown(e, i)}
               className={`w-full text-left rounded-xl border px-4 py-2.5 text-sm transition flex items-center gap-2 ${
                 answered && isCorrect
                   ? 'border-success-500 bg-success-50 text-success-800'
                   : answered && isPicked
                     ? 'border-danger-500 bg-danger-50 text-danger-800'
-                    : 'border-neutral-200 hover:border-brand-400 hover:bg-brand-50/40 text-neutral-700'
+                    : isPicked
+                      ? 'border-brand-400 bg-brand-50/40 text-neutral-700'
+                      : 'border-neutral-200 hover:border-brand-400 hover:bg-brand-50/40 text-neutral-700'
               }`}
             >
-              <span className="w-6 h-6 rounded-md bg-neutral-100 text-neutral-600 text-xs font-bold flex items-center justify-center shrink-0">{String.fromCharCode(65 + i)}</span>
+              <span className="w-6 h-6 rounded-md bg-neutral-100 text-neutral-600 text-xs font-bold flex items-center justify-center shrink-0" aria-hidden="true">{String.fromCharCode(65 + i)}</span>
               {opt[lang]}
             </button>
           );
         })}
       </div>
+      {!answered && (
+        <p className="mt-3 text-[11px] text-neutral-400 flex items-center gap-1.5">
+          <kbd className="kbd">1</kbd>–<kbd className="kbd">{Math.min(9, q.options.length)}</kbd>
+          <span aria-hidden="true">·</span> <kbd className="kbd">↑</kbd> <kbd className="kbd">↓</kbd>
+        </p>
+      )}
       {answered && <Feedback right={wasRight} explanation={q.explanation[lang]} />}
     </div>
   );
@@ -175,7 +219,7 @@ function OutputPrediction({ q, answered, wasRight, onAnswer, lang }: any) {
             >
               <div className="text-xs font-bold text-neutral-600 mb-1.5">Option {opt.label}</div>
               {'error' in opt.result ? (
-                <code className="text-xs text-danger-700 sql-code">⚠ {opt.result.error}</code>
+                <code className="text-xs text-danger-700 sql-code flex items-center gap-1"><AlertTriangle className="w-3 h-3 shrink-0" aria-hidden="true" /> {opt.result.error}</code>
               ) : (
                 <ResultTable columns={opt.result.columns} rows={opt.result.rows} maxRows={4} compact />
               )}

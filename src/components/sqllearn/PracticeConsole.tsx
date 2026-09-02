@@ -279,6 +279,10 @@ export function PracticeConsole({ dataset, driver, onQueryRun }: { dataset: stri
             >
               <Play className="w-3.5 h-3.5" /> {t('console.run')}
             </button>
+            <span className="hidden sm:inline-flex items-center gap-0.5" aria-hidden="true" title={t('console.ctrlEnter')}>
+              <kbd className="kbd">Ctrl</kbd>
+              <kbd className="kbd">↵</kbd>
+            </span>
             <button onClick={() => setQuery('')} className="inline-flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs text-neutral-700 hover:border-neutral-400 transition" title={t('console.clear')}>
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -468,7 +472,7 @@ function ResultsPanel({ runState, task, onFix }: { runState: RunState; task: Pra
               <p className="text-sm text-danger-900/90 leading-relaxed">{friendly.title[lang]}</p>
               {friendly.suggestion && (
                 <p className="text-xs text-danger-800/80 leading-relaxed mt-1.5 flex gap-1.5">
-                  <span className="shrink-0 font-bold">💡</span>
+                  <span className="shrink-0"><Lightbulb className="w-4 h-4 text-amber-500" aria-hidden="true" /></span>
                   <span>{friendly.suggestion[lang]}</span>
                 </p>
               )}

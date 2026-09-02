@@ -28,6 +28,7 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'status.locked': { en: 'Locked', hi: 'Locked' },
   'status.locked.reason': { en: 'Complete previous module first', hi: 'Pehla module complete karo' },
   'status.levelLocked': { en: 'Locked — finish the level above', hi: 'Locked — upar wala level complete karo' },
+  'module.locked.continue': { en: 'Continue learning', hi: 'Continue karo' },
 
   // Landing
   'landing.hero.badge': { en: '100% free · No signup · Works offline', hi: '100% free · No signup · Offline bhi chalta hai' },
@@ -42,6 +43,28 @@ export const ui: Record<string, { en: string; hi: string }> = {
   'landing.cta.sandbox': { en: 'Try the Sandbox', hi: 'Sandbox Try Karo' },
   'landing.features.title': { en: 'Why SQL Learn?', hi: 'SQL Learn kyun?' },
   'landing.stats.title': { en: 'The complete journey', hi: 'Poora safar' },
+
+  // How you learn — 3-step pedagogy journey
+  'landing.journey.title': { en: 'How you learn', hi: 'Aap kaise seekhte hain' },
+  'landing.journey.sub': {
+    en: 'Every module follows the same proven loop — understand the concept, write real queries, prove your skill.',
+    hi: 'Har module ek hi proven loop follow karta hai — concept samjho, real queries likho, skill prove karo.',
+  },
+  'landing.journey.s1.title': { en: 'Learn the concept', hi: 'Concept samjho' },
+  'landing.journey.s1.desc': {
+    en: 'Short, visual lessons with animated tutorials, diagrams and highlighted tables — no jargon, no walls of text.',
+    hi: 'Chhote, visual lessons — animated tutorials, diagrams aur highlighted tables ke saath. Na jargon, na lambi boring lines.',
+  },
+  'landing.journey.s2.title': { en: 'Practice with real SQL', hi: 'Real SQL se practice karo' },
+  'landing.journey.s2.desc': {
+    en: 'Write queries in a live editor against real datasets. Instant validation, friendly errors and step-by-step hints.',
+    hi: 'Live editor me real datasets par queries likho. Instant validation, friendly errors aur step-by-step hints.',
+  },
+  'landing.journey.s3.title': { en: 'Prove it, level up', hi: 'Prove karo, level up karo' },
+  'landing.journey.s3.desc': {
+    en: 'Clear module quizzes, earn your level, and cap it off with industry-grade capstone projects.',
+    hi: 'Module quizzes clear karo, apna level earn karo, aur industry-grade capstone projects se finish karo.',
+  },
 
   // Features
   'feature.console.title': { en: 'Real practice console', hi: 'Real practice console' },

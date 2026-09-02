@@ -3,7 +3,7 @@
 // ============ Module page: Theory / Quiz / Practice / Summary (spec §16.4) ============
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, ClipboardList, Terminal, CheckCircle2, Lock, ArrowLeft, ArrowRight, Home, ChevronDown, AlertTriangle, RotateCw, BadgeCheck, ArrowDown } from 'lucide-react';
+import { BookOpen, ClipboardList, Terminal, CheckCircle2, Lock, ArrowLeft, ArrowRight, Home, ChevronDown, AlertTriangle, RotateCw, BadgeCheck, ArrowDown, Clock, Keyboard, Target, Lightbulb, Trophy, Compass, XCircle } from 'lucide-react';
 import type { Module } from '@/types/content';
 import { loadModule } from '@/lib/content/registry';
 import { MODULE_INDEX, levelOfModule } from '@/lib/content/registry';
@@ -14,7 +14,7 @@ import { QuizTab } from '@/components/sqllearn/QuizTab';
 import { Diagram } from '@/components/sqllearn/Diagram';
 import { SQLCode, SQLChip } from '@/components/sqllearn/SQLDisplay';
 import { LEVEL_META } from '@/lib/content/registry';
-import { isModuleUnlocked } from '@/lib/progress/unlock';
+import { isModuleUnlocked, nextTargetModule } from '@/lib/progress/unlock';
 import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/LazyPracticeConsole';
 
 export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number; onNavigate: (route: string) => void }) {
@@ -25,6 +25,7 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   const [tab, setTab] = useState<'theory' | 'quiz' | 'practice' | 'summary'>('theory');
   const [practiceTask, setPracticeTask] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const progress = useProgressStore();
   const mp = useProgressStore((s) => s.modules[`module-${String(moduleNumber).padStart(2, '0')}`]);
   const unlocked = isModuleUnlocked(moduleNumber, progress);
@@ -93,6 +94,10 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   }
 
   if (!unlocked) {
+    // Smart recovery: point the learner at exactly where they should continue,
+    // instead of dumping them back on the dashboard.
+    const target = nextTargetModule(useProgressStore.getState());
+    const targetEntry = MODULE_INDEX[target];
     return (
       <div className="max-w-xl mx-auto px-4 py-24 text-center">
         <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
@@ -100,7 +105,14 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
         </div>
         <h2 className="font-heading text-xl font-bold text-neutral-800 mb-2">{t('module.locked.title')}</h2>
         <p className="text-sm text-neutral-600 mb-6">{t('module.locked.desc')}</p>
-        <button onClick={() => onNavigate('/')} className="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">{t('nav.home')}</button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button onClick={() => onNavigate(`/module/${target}`)} className="rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition">
+            {t('module.locked.continue')} — M{target}: {lang === 'hi' ? targetEntry.titleHi : targetEntry.titleEn}
+          </button>
+          <button onClick={() => onNavigate('/')} className="inline-flex items-center gap-1 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-neutral-400 transition">
+            <Home className="w-3.5 h-3.5" /> {t('nav.home')}
+          </button>
+        </div>
       </div>
     );
   }
@@ -128,28 +140,52 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
             {t(`level.${entry.level}`)}
           </span>
           <span className="text-neutral-500">M{moduleNumber}</span>
-          {completed && <span className="text-success-600 font-bold text-[10px]">✓ {t('status.completed')}</span>}
+          {completed && <span className="text-success-600 font-bold text-[10px] inline-flex items-center gap-0.5"><CheckCircle2 className="w-3 h-3" aria-hidden="true" /> {t('status.completed')}</span>}
         </div>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold text-neutral-900 leading-tight mb-1">{module.title[lang]}</h1>
         <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500">
-          <span>⏱ {entry.estimatedTime}</span>
-          <span>⌨ {entry.taskCount} {t('stats.tasks').toLowerCase()}</span>
-          <span>📝 {module.quiz.length} {t('module.quizCount')}</span>
+          <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> {entry.estimatedTime}</span>
+          <span className="inline-flex items-center gap-1"><Keyboard className="w-3.5 h-3.5" aria-hidden="true" /> {entry.taskCount} {t('stats.tasks').toLowerCase()}</span>
+          <span className="inline-flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> {module.quiz.length} {t('module.quizCount')}</span>
           <span className="inline-flex items-center gap-1 text-success-700"><BadgeCheck className="w-3.5 h-3.5" />{t('theory.verified')}</span>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-5 border-b border-neutral-200 overflow-x-auto custom-scroll">
-        {tabs.map(({ id, icon: Icon, label }) => (
+      {/* Tabs — ARIA tablist with arrow-key navigation (power-user + a11y) */}
+      <div
+        role="tablist"
+        aria-label={module.title[lang]}
+        className="flex gap-1 mb-5 border-b border-neutral-200 overflow-x-auto custom-scroll"
+        onKeyDown={(e) => {
+          const ids = tabs.map((x) => x.id);
+          const cur = ids.indexOf(tab);
+          let nextIdx = -1;
+          if (e.key === 'ArrowRight') nextIdx = (cur + 1) % ids.length;
+          else if (e.key === 'ArrowLeft') nextIdx = (cur - 1 + ids.length) % ids.length;
+          else if (e.key === 'Home') nextIdx = 0;
+          else if (e.key === 'End') nextIdx = ids.length - 1;
+          if (nextIdx >= 0) {
+            e.preventDefault();
+            setTab(ids[nextIdx]);
+            tabRefs.current[nextIdx]?.focus();
+          }
+        }}
+      >
+        {tabs.map(({ id, icon: Icon, label }, i) => (
           <button
             key={id}
+            ref={(el) => { tabRefs.current[i] = el; }}
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            id={`tab-${id}`}
+            tabIndex={tab === id ? 0 : -1}
             onClick={() => setTab(id)}
             className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap ${
               tab === id ? 'border-brand-600 text-brand-700' : 'border-transparent text-neutral-500 hover:text-neutral-800'
             }`}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-4 h-4" aria-hidden="true" />
             {label}
             {id === 'practice' && passed.length > 0 && <span className="text-[10px] bg-success-100 text-success-700 rounded-full px-1.5">{passed.length}/{entry.taskCount}</span>}
             {id === 'quiz' && quizBest !== null && <span className="text-[10px] bg-brand-100 text-brand-700 rounded-full px-1.5">{quizBest}%</span>}
@@ -157,17 +193,21 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
         ))}
       </div>
 
-      {/* Content */}
+      {/* Content — each tab renders its panel with matching aria-labelledby */}
       {tab === 'theory' && (
-        <TheoryTab module={module} theoryRead={theoryRead} onRead={() => markTheoryRead(module.id)} />
+        <div role="tabpanel" id="panel-theory" aria-labelledby="tab-theory">
+          <TheoryTab module={module} theoryRead={theoryRead} onRead={() => markTheoryRead(module.id)} />
+        </div>
       )}
       {tab === 'quiz' && (
-        <QuizTab module={module} onScore={(pct) => { recordQuiz(module.id, pct); bumpStats({}); }} />
+        <div role="tabpanel" id="panel-quiz" aria-labelledby="tab-quiz">
+          <QuizTab module={module} onScore={(pct) => { recordQuiz(module.id, pct); bumpStats({}); }} />
+        </div>
       )}
       {tab === 'practice' && (
-        <div className="h-[calc(100vh-260px)] min-h-[520px]">
+        <div role="tabpanel" id="panel-practice" aria-labelledby="tab-practice" className="h-[calc(100vh-260px)] min-h-[520px]">
           <div className="lg:hidden mb-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-xs text-warning-800 leading-relaxed">
-            <b>⚠ {t('mobile.warn.title')}</b> — {t('mobile.warn.desc')}
+            <b className="inline-flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {t('mobile.warn.title')}</b> — {t('mobile.warn.desc')}
           </div>
           <div className="h-full rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden flex flex-col">
             <ConsoleSuspense label={t('common.loading')}>
@@ -199,7 +239,9 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
         </div>
       )}
       {tab === 'summary' && (
-        <SummaryTab module={module} onNavigate={onNavigate} nextUnlocked={nextUnlockedNum} />
+        <div role="tabpanel" id="panel-summary" aria-labelledby="tab-summary">
+          <SummaryTab module={module} onNavigate={onNavigate} nextUnlocked={nextUnlockedNum} />
+        </div>
       )}
 
       {/* Footer nav */}
@@ -255,7 +297,7 @@ function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead:
         {/* Lesson intro — "What you'll learn" callout */}
         <Reveal>
           <div id={`${module.id}-obj`} className="scroll-mt-20 mt-6 rounded-xl bg-neutral-100/90 p-5">
-            <h4 className="text-[13px] font-bold text-neutral-800 mb-2.5">🎯 {t('theory.objectives')}</h4>
+            <h4 className="text-[13px] font-bold text-neutral-800 mb-2.5 flex items-center gap-1.5"><Target className="w-4 h-4 text-brand-600" aria-hidden="true" /> {t('theory.objectives')}</h4>
             <ul className={`grid gap-x-10 gap-y-1.5 ${module.learningObjectives[lang].length > 1 ? 'sm:grid-cols-2' : ''}`}>
               {module.learningObjectives[lang].map((o, i) => (
                 <li key={i} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
@@ -282,7 +324,7 @@ function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead:
               </div>
               {sec.bullets && (
                 <div className="mt-5 rounded-xl bg-neutral-100/90 p-5">
-                  <div className="text-[13px] font-bold text-neutral-800 mb-2.5">✓ {t('theory.keyPoints')}</div>
+                  <div className="text-[13px] font-bold text-neutral-800 mb-2.5 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success-600" aria-hidden="true" /> {t('theory.keyPoints')}</div>
                   <ul className={`grid gap-x-10 gap-y-1.5 ${sec.bullets[lang].length > 1 ? 'sm:grid-cols-2' : ''}`}>
                     {sec.bullets[lang].map((b, j) => (
                       <li key={j} className="text-[14px] text-neutral-700 leading-relaxed flex gap-2.5">
@@ -305,7 +347,7 @@ function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead:
         <Reveal>
           <section id={`${module.id}-syntax`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
             <div className="flex items-baseline gap-3 mb-4">
-              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">⌨</span>
+              <span className="shrink-0"><Keyboard className="w-5 h-5 text-brand-600" aria-hidden="true" /></span>
               <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.syntax')}</h2>
             </div>
             <SQLCode code={module.syntax.template} />
@@ -324,7 +366,7 @@ function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead:
         <Reveal>
           <section id={`${module.id}-examples`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
             <div className="flex items-baseline gap-3 mb-4">
-              <span className="font-heading font-bold text-brand-600 text-lg shrink-0">💡</span>
+              <span className="shrink-0"><Lightbulb className="w-5 h-5 text-brand-600" aria-hidden="true" /></span>
               <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.examples')}</h2>
             </div>
             <div className="divide-y divide-neutral-200 border-y border-neutral-200">
@@ -339,18 +381,18 @@ function TheoryTab({ module, theoryRead, onRead }: { module: Module; theoryRead:
         <Reveal>
           <section id={`${module.id}-mistakes`} className="scroll-mt-20 pt-8 pb-7 border-t border-neutral-200">
             <div className="flex items-baseline gap-3 mb-4">
-              <span className="font-heading font-bold text-warning-600 text-lg shrink-0">⚠</span>
+              <span className="shrink-0"><AlertTriangle className="w-5 h-5 text-warning-600" aria-hidden="true" /></span>
               <h2 className="font-heading font-bold text-[22px] leading-snug text-neutral-900">{t('theory.mistakes')}</h2>
             </div>
             <div className="space-y-4">
               {module.commonMistakes.map((m, i) => (
                 <div key={i} className="rounded-xl border-l-4 border-warning-400 bg-warning-50/60 p-4 grid md:grid-cols-2 gap-3">
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-danger-600 mb-1">✗ {t('theory.mistake')}</div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-danger-600 mb-1 flex items-center gap-1"><XCircle className="w-3 h-3" aria-hidden="true" /> {t('theory.mistake')}</div>
                     <p className="text-[14px] text-neutral-700 leading-relaxed">{m.mistake[lang]}</p>
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-success-600 mb-1">✓ {t('theory.fix')}</div>
+                    <div className="text-[11px] font-bold uppercase tracking-wide text-success-600 mb-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" aria-hidden="true" /> {t('theory.fix')}</div>
                     <p className="text-[14px] text-neutral-700 leading-relaxed">{m.correction[lang]}</p>
                   </div>
                 </div>
@@ -488,7 +530,9 @@ function SummaryTab({ module, onNavigate, nextUnlocked }: { module: Module; onNa
     <div className="space-y-6">
       {completed && <Confetti onceKey={`celebrated:${module.id}`} />}
       <div className="text-center">
-        <div className="text-4xl mb-2">{completed ? '🏆' : '🧭'}</div>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 mx-auto ${completed ? 'bg-success-50' : 'bg-brand-50'}`}>
+          {completed ? <Trophy className="w-7 h-7 text-success-600" aria-hidden="true" /> : <Compass className="w-7 h-7 text-brand-600" aria-hidden="true" />}
+        </div>
         <h2 className="font-heading text-xl font-bold text-neutral-800">{completed ? t('summary.completed') : t('summary.title')}</h2>
         {completed ? (
           <div className="mt-3 mx-auto max-w-md rounded-2xl bg-gradient-to-r from-brand-50 via-success-50 to-brand-50 border border-success-200 px-5 py-3">
@@ -505,17 +549,17 @@ function SummaryTab({ module, onNavigate, nextUnlocked }: { module: Module; onNa
         <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm divide-y divide-neutral-100">
           <div className="px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('summary.checklist')}</div>
           <div className="flex items-center gap-3 p-4">
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${tasksOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{tasksOk ? '✓' : '○'}</span>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${tasksOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{tasksOk ? <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> : <span className="text-[10px]">–</span>}</span>
             <span className="text-sm text-neutral-700">{t('summary.req.tasks')} <b className={tasksOk ? 'text-success-700' : 'text-neutral-500'}>({passed.length}/{module.tasks.length})</b></span>
           </div>
           <div className="flex items-center gap-3 p-4">
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${quizOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{quizOk ? '✓' : '○'}</span>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${quizOk ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-400'}`}>{quizOk ? <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> : <span className="text-[10px]">–</span>}</span>
             <span className="text-sm text-neutral-700">{t('summary.req.quiz')} <b className={quizOk ? 'text-success-700' : 'text-neutral-500'}>({quizBest ?? 0}%)</b></span>
           </div>
         </div>
 
         <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
-          <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2">📚 {t('summary.recap')}</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2 flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> {t('summary.recap')}</h4>
           <ul className="space-y-1.5">
             {module.summary[lang].map((s, i) => (
               <li key={i} className="text-sm text-neutral-700 flex gap-2"><span className="text-brand-500">▸</span>{s}</li>

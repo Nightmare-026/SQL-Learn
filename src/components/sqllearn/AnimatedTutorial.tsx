@@ -7,7 +7,7 @@
 // zero content mistakes); steps with run:true execute and reveal the result.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Pause, RotateCcw, ChevronRight } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronRight, Clapperboard, Lightbulb, CheckCircle2, Zap, Table2 } from 'lucide-react';
 import type { Module, TutorialStep } from '@/types/content';
 import { tokenizeSql } from '@/lib/sql/tokenizer';
 import { DbContext } from '@/lib/sql/engine';
@@ -233,7 +233,7 @@ function TutorialPlayer({ module, steps }: { module: Module; steps: TutorialStep
     <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
       {/* header */}
       <div className="px-4 py-3 bg-brand-50/60 border-b border-brand-100 flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="font-heading font-bold text-brand-800 text-sm">🎬 {t('theory.tutorial')} — {module.tutorial.title[lang]}</h3>
+        <h3 className="font-heading font-bold text-brand-800 text-sm flex items-center gap-1.5"><Clapperboard className="w-4 h-4 shrink-0" aria-hidden="true" /> {t('theory.tutorial')} — {module.tutorial.title[lang]}</h3>
         <div className="flex items-center gap-1.5">
           <button
             onClick={cycleSpeed}
@@ -268,18 +268,18 @@ function TutorialPlayer({ module, steps }: { module: Module; steps: TutorialStep
           </div>
           <div className="mt-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-wide text-neutral-400">
             <span className="tabular-nums">{typedPct}%</span>
-            <span className="inline-flex items-center gap-1">{step?.run ? <><span className="text-success-600">▶</span> runs live</> : '—'}</span>
+            <span className="inline-flex items-center gap-1">{step?.run ? <><Zap className="w-3 h-3 text-success-600" aria-hidden="true" /> runs live</> : '—'}</span>
           </div>
         </div>
 
         {/* explanation + live table + result */}
         <div className="p-4 min-w-0 flex flex-col gap-3">
-          <p className="text-sm text-neutral-700 leading-relaxed">💡 {step?.explanation[lang]}</p>
+          <p className="text-sm text-neutral-700 leading-relaxed flex gap-2"><Lightbulb className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" aria-hidden="true" /><span>{step?.explanation[lang]}</span></p>
 
           {source ? (
             <div>
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">📊 {source.table} · {t('theory.liveTable')}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-500 flex items-center gap-1"><Table2 className="w-3 h-3" aria-hidden="true" /> {source.table} · {t('theory.liveTable')}</span>
                 {rowsActive && (
                   <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 tabular-nums ${source.matchedCount > 0 ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-neutral-100 text-neutral-500 border border-neutral-200'}`}>
                     {source.matchedCount}/{source.total} {t('theory.rowsMatch')}
@@ -319,14 +319,14 @@ function TutorialPlayer({ module, steps }: { module: Module; steps: TutorialStep
               onClick={onPlayPause}
               className="rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50/60 px-4 py-6 text-sm text-neutral-500 hover:border-brand-300 hover:text-brand-600 transition text-left"
             >
-              ▶ {t('theory.pressPlay')}
+              <span className="flex items-center gap-1.5"><Play className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> {t('theory.pressPlay')}</span>
             </button>
           )}
 
           {runResult && (
             <div className="tut-reveal">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-success-700">✓ {t('theory.result')}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-success-700 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" aria-hidden="true" /> {t('theory.result')}</span>
                 <span className="text-[10px] font-bold text-neutral-400 tabular-nums">{runResult.rows.length} rows</span>
               </div>
               <ResultTable columns={runResult.columns} rows={runResult.rows} maxRows={6} compact />

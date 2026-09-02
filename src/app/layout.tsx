@@ -1,19 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Poppins, JetBrains_Mono } from "next/font/google";
+import { Lexend, Source_Sans_3, JetBrains_Mono, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({
-  variable: "--font-inter",
+// UI UX Pro Max "Corporate Trust" pairing — Lexend is specifically designed
+// for reading proficiency (education-grade), Source Sans 3 for accessible body.
+// Noto Sans Devanagari covers Hindi (HI locale) glyphs.
+const lexend = Lexend({
+  variable: "--font-heading",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const sourceSans = Source_Sans_3({
+  variable: "--font-body",
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-devanagari",
+  subsets: ["devanagari"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -44,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${poppins.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${lexend.variable} ${sourceSans.variable} ${notoDevanagari.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background text-foreground`}
       >
         {children}
         <Toaster />

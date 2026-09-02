@@ -3,7 +3,7 @@
 // ============ TopBar + hash router shell + all pages (single route app) ============
 
 import React, { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type ErrorInfo } from 'react';
-import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle, RotateCw } from 'lucide-react';
+import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle, RotateCw, Zap, Play, Award, MousePointerClick, Wrench, Lightbulb, Target, Keyboard } from 'lucide-react';
 import { MODULE_INDEX, TOTAL_MODULES, TOTAL_TASKS, TOTAL_PROJECTS, TOTAL_QUIZZES, loadProjects, LEVEL_META, levelOfModule, searchModules } from '@/lib/content/registry';
 import { useProgressStore, useProgressSummary } from '@/lib/progress/store';
 import { useLangStore, useLang, useT } from '@/lib/i18n/store';
@@ -14,7 +14,7 @@ import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/Lazy
 import { DbContext, ENGINE_LIMITS } from '@/lib/sql/engine';
 import { SQLChip, ResultTable } from '@/components/sqllearn/SQLDisplay';
 import { tokenizeSql } from '@/lib/sql/tokenizer';
-import { Loader2, Play, Trash2, Copy } from 'lucide-react';
+import { Loader2, Trash2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 function escapeHtml(s: string) {
@@ -25,7 +25,14 @@ function escapeHtml(s: string) {
 export default function App() {
   const [route, setRoute] = useState('/');
   const touch = useProgressStore((s) => s.touch);
+  const lang = useLang();
   const hydrated = useHydrated();
+
+  // Keep <html lang> in sync with the UI locale so screen readers pick the
+  // right pronunciation engine for EN/HI content.
+  useEffect(() => {
+    document.documentElement.lang = lang === 'hi' ? 'hi' : 'en';
+  }, [lang]);
 
   useEffect(() => {
     const apply = () => setRoute(window.location.hash.slice(1) || '/');
@@ -48,14 +55,27 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }, []);
 
+  // Power-user affordance (Developer Tool guidance): Ctrl/Cmd+K jumps to search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (window.location.hash.slice(1) !== '/search') navigate('/search');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
   useEffect(() => { if (hydrated) touch(); }, [hydrated, touch]);
 
   if (!hydrated) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
+      <a href="#main-content" className="skip-link">{lang === 'hi' ? 'मुख्य कंटेंट पर जाएं' : 'Skip to main content'}</a>
       <TopBar route={route} onNavigate={navigate} />
-      <main className="flex-1 w-full">
+      <main id="main-content" className="flex-1 w-full">
         <AppErrorBoundary>
           <PageRouter route={route} onNavigate={navigate} />
         </AppErrorBoundary>
@@ -209,7 +229,7 @@ function TopBar({ route, onNavigate }: { route: string; onNavigate: (r: string) 
                                 >
                                   <span className="text-[10px] text-neutral-400 w-6 shrink-0">M{e.number}</span>
                                   <span className={`text-xs truncate flex-1 ${st === 'completed' ? 'text-neutral-500' : 'text-neutral-700'}`}>
-                                    {isProject && '🎯 '}{e.titleEn}
+                                    {isProject && <Target className="w-3 h-3 inline -mt-0.5 mr-0.5 text-brand-500" aria-hidden="true" />}{e.titleEn}
                                   </span>
                                   {st === 'completed' && <CheckCircle2 className="w-3.5 h-3.5 text-success-500 shrink-0" />}
                                   {st === 'locked' && <Lock className="w-3 h-3 text-neutral-300 shrink-0" />}
@@ -234,9 +254,13 @@ function TopBar({ route, onNavigate }: { route: string; onNavigate: (r: string) 
             )}
           </div>
 
-          <button onClick={() => onNavigate('/search')} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 transition">
+          <button onClick={() => onNavigate('/search')} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 transition" aria-label={t('nav.search')}>
             <Search className="w-4 h-4" />
             <span className="hidden lg:inline">{t('nav.search')}</span>
+            <span className="hidden lg:flex items-center gap-0.5 ml-1" aria-hidden="true">
+              <kbd className="kbd">Ctrl</kbd>
+              <kbd className="kbd">K</kbd>
+            </span>
           </button>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
@@ -253,14 +277,21 @@ function TopBar({ route, onNavigate }: { route: string; onNavigate: (r: string) 
             </div>
 
             {/* progress */}
-            <div className="hidden sm:flex items-center gap-2 min-w-[90px]">
+            <div
+              className="hidden sm:flex items-center gap-2 min-w-[90px]"
+              role="progressbar"
+              aria-valuenow={summary.overallPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${summary.overallPercent}% ${t('dash.welcome')}`}
+            >
               <div className="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                 <div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${summary.overallPercent}%` }} />
               </div>
               <span className="text-[10px] font-bold text-neutral-500 tabular-nums">{summary.overallPercent}%</span>
             </div>
 
-            <button onClick={() => onNavigate('/settings')} className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition">
+            <button onClick={() => onNavigate('/settings')} aria-label={t('nav.settings')} className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition">
               <Settings className="w-4 h-4" />
             </button>
           </div>
@@ -299,6 +330,13 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
     { icon: Globe, title: t('feature.language.title'), desc: t('feature.language.desc') },
   ];
 
+  // How you learn — 3-step pedagogy journey (education-type structure)
+  const journey = [
+    { icon: BookOpen, step: '1', title: t('landing.journey.s1.title'), desc: t('landing.journey.s1.desc') },
+    { icon: MousePointerClick, step: '2', title: t('landing.journey.s2.title'), desc: t('landing.journey.s2.desc') },
+    { icon: Award, step: '3', title: t('landing.journey.s3.title'), desc: t('landing.journey.s3.desc') },
+  ];
+
   const levels = (['beginner', 'intermediate', 'advanced'] as const).map((level) => {
     const mods = Object.values(MODULE_INDEX).filter((e) => e.level === level);
     const first = mods[0];
@@ -311,7 +349,7 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
       <section className="relative overflow-hidden border-b border-neutral-200 bg-gradient-to-b from-brand-50/70 via-white to-white">
         <div className="max-w-5xl mx-auto px-4 pt-14 pb-16 text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm">
-            ⚡ {t('landing.hero.badge')}
+            <Zap className="w-3.5 h-3.5" aria-hidden="true" /> {t('landing.hero.badge')}
           </span>
           <h1 className="font-heading text-4xl sm:text-5xl font-bold mt-4 mb-3 text-neutral-900 tracking-tight">
             {t('landing.hero.title1')}<br />
@@ -325,7 +363,7 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
               onClick={() => onNavigate(`/module/${target}`)}
               className="rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition"
             >
-              ▶ {t('landing.cta.start')}
+              <Play className="w-4 h-4 inline -mt-0.5 mr-1" aria-hidden="true" /> {t('landing.cta.start')}
             </button>
             <button
               onClick={() => onNavigate('/sandbox')}
@@ -342,13 +380,15 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
             <div className="grid grid-cols-[120px_1fr] text-[11px]">
               <div className="border-r border-neutral-700/60 p-2.5 space-y-1 text-neutral-400 sql-code">
                 <div className="text-neutral-500 text-[9px] uppercase">schema</div>
-                <div>📄 students</div><div>📄 teachers</div><div>📄 courses</div>
+                <div className="flex items-center gap-1"><Database className="w-3 h-3 text-sky-400" aria-hidden="true" /> students</div>
+                <div className="flex items-center gap-1"><Database className="w-3 h-3 text-sky-400" aria-hidden="true" /> teachers</div>
+                <div className="flex items-center gap-1"><Database className="w-3 h-3 text-sky-400" aria-hidden="true" /> courses</div>
               </div>
               <div className="p-3">
                 <pre className="sql-code text-neutral-200 whitespace-pre-wrap">{`SELECT name, city
 FROM students
 WHERE city = 'Delhi';`}</pre>
-                <div className="mt-3 rounded-lg bg-neutral-800/70 p-2 sql-code text-green-300">✓ 7 rows · 0.8ms</div>
+                <div className="mt-3 rounded-lg bg-neutral-800/70 p-2 sql-code text-green-300 flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-green-400 shrink-0" aria-hidden="true" /> 7 rows · 0.8ms</div>
               </div>
             </div>
           </div>
@@ -356,18 +396,19 @@ WHERE city = 'Delhi';`}</pre>
       </section>
 
       {/* stats strip */}
-      <section className="border-b border-neutral-200 bg-white">
+      <section className="border-b border-neutral-200 bg-white" aria-label={t('stats.modules')}>
         <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
           {[
-            [TOTAL_MODULES, t('stats.modules')],
-            [TOTAL_TASKS, t('stats.tasks')],
-            [TOTAL_QUIZZES, t('stats.quiz')],
-            [TOTAL_PROJECTS, t('stats.projects')],
-            [TOTAL_TASKS * 3, t('stats.hints')],
-          ].map(([n, label]) => (
-            <div key={label as string}>
-              <div className="font-heading text-2xl font-bold text-brand-600">{n}</div>
-              <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">{label}</div>
+            [TOTAL_MODULES, t('stats.modules'), BookOpen],
+            [TOTAL_TASKS, t('stats.tasks'), Wrench],
+            [TOTAL_QUIZZES, t('stats.quiz'), ClipboardList],
+            [TOTAL_PROJECTS, t('stats.projects'), Trophy],
+            [TOTAL_TASKS * 3, t('stats.hints'), Lightbulb],
+          ].map(([n, label, Icon]: any) => (
+            <div key={label as string} className="flex flex-col items-center gap-1">
+              <Icon className="w-4 h-4 text-brand-500" aria-hidden="true" />
+              <div className="font-heading text-2xl font-bold text-brand-600 tabular-nums">{n}</div>
+              <div className="text-xs uppercase tracking-wide text-neutral-600">{label}</div>
             </div>
           ))}
         </div>
@@ -389,6 +430,28 @@ WHERE city = 'Delhi';`}</pre>
         </div>
       </section>
 
+      {/* how you learn — 3-step pedagogy journey */}
+      <section className="border-t border-neutral-200 bg-gradient-to-b from-brand-50/40 to-white">
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <h2 className="font-heading text-2xl font-bold text-neutral-800 text-center mb-2">{t('landing.journey.title')}</h2>
+          <p className="text-center text-sm text-neutral-500 mb-10 max-w-xl mx-auto">{t('landing.journey.sub')}</p>
+          <div className="grid sm:grid-cols-3 gap-4 sm:gap-6" role="list">
+            {journey.map((s) => (
+              <div key={s.step} role="listitem" className="relative rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-heading font-bold text-sm shrink-0">
+                    {s.step}
+                  </div>
+                  <s.icon className="w-5 h-5 text-brand-500 shrink-0" aria-hidden="true" />
+                </div>
+                <h3 className="font-heading font-bold text-sm text-neutral-800 mb-1.5">{s.title}</h3>
+                <p className="text-xs text-neutral-600 leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* levels */}
       <section className="border-t border-neutral-200 bg-white">
         <div className="max-w-5xl mx-auto px-4 py-12">
@@ -402,9 +465,9 @@ WHERE city = 'Delhi';`}</pre>
                 className="rounded-2xl border border-neutral-200 bg-white p-5 text-left shadow-sm hover:shadow-md hover:-translate-y-0.5 transition group"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="w-3 h-3 rounded-full" style={{ background: meta.dot }} />
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ background: meta.dot }} aria-hidden="true" />
                   <span className="font-heading font-bold text-sm text-neutral-800">{t(`level.${level}`)}</span>
-                  <span className="ml-auto text-[10px] text-neutral-400">{count} modules</span>
+                  <span className="ml-auto text-[10px] font-semibold text-neutral-500 tabular-nums">{count} modules</span>
                 </div>
                 <p className="text-xs text-neutral-500 mb-3">{t(`level.${level}.desc`)}</p>
                 <div className="text-xs font-semibold text-brand-600 group-hover:text-brand-700 flex items-center gap-1">
@@ -421,7 +484,7 @@ WHERE city = 'Delhi';`}</pre>
         <div className="max-w-2xl mx-auto px-4 py-14 text-center">
           <h2 className="font-heading text-2xl font-bold text-neutral-800 mb-2">{t('landing.hero.title1')} <span className="text-brand-600">{t('landing.hero.title2')}</span></h2>
           <button onClick={() => onNavigate(`/module/${target}`)} className="mt-4 rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 transition">
-            ▶ {t('landing.cta.start')}
+            <Play className="w-4 h-4 inline -mt-0.5 mr-1" aria-hidden="true" /> {t('landing.cta.start')}
           </button>
         </div>
       </section>
@@ -593,7 +656,7 @@ function ProjectsPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   const sorted = [...projects].sort((a, b) => a.order - b.order);
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-1">🏆 {t('projects.title')}</h1>
+      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-1 flex items-center gap-2"><Trophy className="w-6 h-6 text-brand-600" aria-hidden="true" /> {t('projects.title')}</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-2xl">{t('projects.desc')}</p>
       <div className="grid sm:grid-cols-2 gap-4">
         {sorted.map((p) => {
@@ -620,7 +683,7 @@ function ProjectsPage({ onNavigate }: { onNavigate: (r: string) => void }) {
               <h3 className="font-heading font-bold text-sm text-neutral-800 mb-1">{lang === 'hi' ? p.title.hi : p.title.en}</h3>
               <p className="text-xs text-neutral-500 mb-3 line-clamp-2">{lang === 'hi' ? p.subtitle.hi : p.subtitle.en}</p>
               <div className="flex items-center gap-3 text-[11px] text-neutral-500">
-                <span>⌨ {done}/{p.tasks.length} {t('projects.tasks')}</span>
+                <span className="inline-flex items-center gap-1"><Keyboard className="w-3 h-3" aria-hidden="true" /> {done}/{p.tasks.length} {t('projects.tasks')}</span>
                 {!unlocked && <span className="flex items-center gap-1 text-neutral-400"><Lock className="w-3 h-3" /> {t('projects.locked')} M{p.moduleNumber}</span>}
               </div>
               {p.tasks.length > 0 && (
@@ -719,8 +782,8 @@ function ProjectPage({ projectId, onNavigate }: { projectId: string; onNavigate:
       </div>
 
       {pp.status === 'completed' && (
-        <div className="mt-4 rounded-2xl border border-success-200 bg-success-50 p-4 text-center font-semibold text-success-700">
-          🏆 {t('projects.done')}
+        <div className="mt-4 rounded-2xl border border-success-200 bg-success-50 p-4 text-center font-semibold text-success-700 flex items-center justify-center gap-2">
+          <Trophy className="w-4 h-4 shrink-0" aria-hidden="true" /> {t('projects.done')}
         </div>
       )}
     </div>
@@ -746,7 +809,7 @@ function SearchPage({ onNavigate }: { onNavigate: (r: string) => void }) {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-4">🔍 {t('search.title')}</h1>
+      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-4 flex items-center gap-2"><Search className="w-6 h-6 text-brand-600" aria-hidden="true" /> {t('search.title')}</h1>
       <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm mb-5 space-y-3">
         <input
           value={q}
@@ -1023,7 +1086,7 @@ function SettingsPage() {
 
       {/* stats */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <h3 className="font-heading font-bold text-sm text-neutral-800 mb-3">📊 {t('settings.stats')}</h3>
+        <h3 className="font-heading font-bold text-sm text-neutral-800 mb-3 flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-brand-600" aria-hidden="true" /> {t('settings.stats')}</h3>
         <div className="grid grid-cols-4 gap-3 text-center">
           <Stat label={t('dash.queries')} value={stats.totalQueriesRun} />
           <Stat label={t('dash.tasksDone')} value={stats.totalTasksCompleted} />
