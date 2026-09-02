@@ -71,7 +71,7 @@ export function PracticeConsole({
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [schema, setSchema] = useState<SchemaMeta | null>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => 'SELECT * FROM ' + (dataset === 'school' ? 'students' : dataset === 'ecommerce' ? 'customers' : 'employees') + ' LIMIT 5;');
   const [runState, setRunState] = useState<RunState>({ kind: 'idle' });
   const [attempts, setAttempts] = useState(0);
   const [hintsOpen, setHintsOpen] = useState(0);
@@ -95,6 +95,7 @@ export function PracticeConsole({
         if (!alive) return;
         setSchema(s);
         setReady(true);
+        setQuery((q) => (q.trim() === '' ? 'SELECT * FROM ' + (s.tables[0]?.name ?? 'students') + ' LIMIT 5;' : q));
       })
       .catch((e: unknown) => {
         if (!alive) return;
@@ -116,13 +117,10 @@ export function PracticeConsole({
       .then((s) => {
         setSchema(s);
         setReady(true);
+        setQuery((q) => (q.trim() === '' ? 'SELECT * FROM ' + (s.tables[0]?.name ?? 'students') + ' LIMIT 5;' : q));
       })
       .catch((e: unknown) => setInitError(e instanceof Error ? e.message : String(e)));
   }, [dataset]);
-
-  useEffect(() => {
-    if (task && query.trim() === '') setQuery('SELECT * FROM ' + (schema?.tables[0]?.name ?? 'students') + ' LIMIT 5;');
-  }, [driver.taskIndex, schema]);
 
   const [prevTaskIdx, setPrevTaskIdx] = useState(driver.taskIndex);
   if (prevTaskIdx !== driver.taskIndex) {
@@ -130,6 +128,9 @@ export function PracticeConsole({
     setHintsOpen(0);
     setAttempts(0);
     setRunState({ kind: 'idle' });
+    if (query.trim() === '') {
+      setQuery('SELECT * FROM ' + (schema?.tables[0]?.name ?? 'students') + ' LIMIT 5;');
+    }
   }
 
   const handleRun = useCallback(async () => {

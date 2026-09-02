@@ -102,103 +102,76 @@ function TutorialPlayer({ module, steps }: { module: Module; steps: TutorialStep
     setPlaying(autoplay);
   }, []);
 
-  // Load the source table (highlight set evaluated by the real engine).
-  const loadTable = useCallback(async (tbl: { name: string; highlightWhere?: string; fadeOthers?: boolean } | undefined) => {
-    if (!tbl?.name) { setSource(null); return; }
-    const key = `${tbl.name}|${tbl.highlightWhere ?? ''}`;
-    const cached = cacheRef.current.get(key);
-    if (cached) { setSource(cached); return; }
-    try {
-      if (!ctxRef.current) {
-        ctxRef.current = new DbContext(module.dataset);
-        await ctxRef.current.ensure();
-      }
-      const ctx = ctxRef.current;
-      const disp = await ctx.run(`SELECT rowid, * FROM ${tbl.name} LIMIT ${DISPLAY_ROWS}`);
-      if (!disp.ok || !disp.result) throw new Error('table fetch failed');
-      const totalOut = await ctx.run(`SELECT COUNT(*) AS _c FROM ${tbl.name}`);
-      const total = Number(totalOut.ok ? totalOut.result?.rows?.[0]?.[0] ?? 0 : 0);
-      let matchedIds: Set<number> | null = null;
-      let matchedCount = total;
-      if (tbl.highlightWhere) {
-        const mOut = await ctx.run(`SELECT rowid FROM ${tbl.name} WHERE ${tbl.highlightWhere}`);
-        if (mOut.ok && mOut.result) {
-          matchedIds = new Set(mOut.result.rows.map((r) => Number(r[0])));
-          matchedCount = matchedIds.size;
-        }
-      } else {
-        // no condition → whole-table scan: highlight every displayed row
-        matchedIds = new Set(disp.result.rows.map((r) => Number(r[0])));
-        matchedCount = total;
-      }
-      const data: SourceData = {
-        table: tbl.name,
-        columns: disp.result.columns.slice(1),
-        rows: disp.result.rows,
-        matchedIds,
-        matchedCount,
-        total,
-      };
-      cacheRef.current.set(key, data);
-      setSource(data);
-      setTableError(false);
-    } catch {
-      // Engine unavailable — code typing still works, table pane degrades gracefully.
-      setTableError(true);
-      setSource(null);
-    }
-  }, [module.dataset]);
-
-  // Typing + auto-advance state machine.
-  useEffect(() => {
-    if (!playing) return;
-    if (typedChars < fullCode.length) {
-      typeTimerRef.current = setTimeout(() => {
-        setTypedChars((c) => Math.min(fullCode.length, c + charsPerTick));
-      }, 18);
-      return () => { if (typeTimerRef.current) clearTimeout(typeTimerRef.current); };
-    }
-    // typing complete for this step
-    if (advanceRef.current) return; // already scheduled
-    const advance = () => {
-      advanceRef.current = null;
-      if (stepIdx < steps.length - 1) {
-        setStepIdx(stepIdx + 1);
-        setTypedChars(0);
-        setRunResult(null);
-        // playing continues → typing effect picks up the next step
-      } else {
-        setPlaying(false);
-      }
-    };
-    if (step?.run) {
-      const runIt = async () => {
-        try {
-          if (!ctxRef.current) {
-            ctxRef.current = new DbContext(module.dataset);
-            await ctxRef.current.ensure();
-          }
-          const out = await ctxRef.current.runIsolated(fullCode);
-          if (out.ok && out.result) setRunResult(out.result);
-          else setRunResult(null);
-        } catch {
-          setRunResult(null);
-        }
-      };
-      runIt();
-      advanceRef.current = setTimeout(advance, Math.round(2400 / speed));
-    } else {
-      advanceRef.current = setTimeout(advance, Math.round(1500 / speed));
-    }
-    return () => { /* advance timer cleaned by clearTimers on pause/reset */ };
-  }, [playing, typedChars, fullCode, stepIdx, speed]);
-
   // Fetch source table when the shown step changes (during playback or after manual jump).
   useEffect(() => {
+    let active = true;
     const tbl = step?.table;
     if (!playing && typedChars === 0 && !source) return; // idle before first play → placeholder
-    void loadTable(tbl);
-  }, [stepIdx, playing]);
+
+    const load = async () => {
+      if (!tbl?.name) {
+        if (active) setSource(null);
+        return;
+      }
+      const key = `${tbl.name}|${tbl.highlightWhere ?? ''}`;
+      const cached = cacheRef.current.get(key);
+      if (cached) {
+        if (active) {
+          setSource(cached);
+          setTableError(false);
+        }
+        return;
+      }
+      try {
+        if (!ctxRef.current) {
+          ctxRef.current = new DbContext(module.dataset);
+          await ctxRef.current.ensure();
+        }
+        const ctx = ctxRef.current;
+        const disp = await ctx.run(`SELECT rowid, * FROM ${tbl.name} LIMIT ${DISPLAY_ROWS}`);
+        if (!disp.ok || !disp.result) throw new Error('table fetch failed');
+        const totalOut = await ctx.run(`SELECT COUNT(*) AS _c FROM ${tbl.name}`);
+        const total = Number(totalOut.ok ? totalOut.result?.rows?.[0]?.[0] ?? 0 : 0);
+        let matchedIds: Set<number> | null = null;
+        let matchedCount = total;
+        if (tbl.highlightWhere) {
+          const mOut = await ctx.run(`SELECT rowid FROM ${tbl.name} WHERE ${tbl.highlightWhere}`);
+          if (mOut.ok && mOut.result) {
+            matchedIds = new Set(mOut.result.rows.map((r) => Number(r[0])));
+            matchedCount = matchedIds.size;
+          }
+        } else {
+          // no condition → whole-table scan: highlight every displayed row
+          matchedIds = new Set(disp.result.rows.map((r) => Number(r[0])));
+          matchedCount = total;
+        }
+        const data: SourceData = {
+          table: tbl.name,
+          columns: disp.result.columns.slice(1),
+          rows: disp.result.rows,
+          matchedIds,
+          matchedCount,
+          total,
+        };
+        cacheRef.current.set(key, data);
+        if (active) {
+          setSource(data);
+          setTableError(false);
+        }
+      } catch {
+        // Engine unavailable — code typing still works, table pane degrades gracefully.
+        if (active) {
+          setTableError(true);
+          setSource(null);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [step?.table, playing, typedChars, source, module.dataset]);
 
   useEffect(() => () => clearTimers(), []);
 

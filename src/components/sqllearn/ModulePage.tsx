@@ -2,7 +2,7 @@
 
 // ============ Module page: User-Adjustable Draggable Split-Screen Workspace ============
 
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import {
   BookOpen,
   ClipboardList,
@@ -45,7 +45,13 @@ import { SQLLifecycleVisualizer } from '@/components/sqllearn/SQLLifecycleVisual
 
 export type WorkspaceMode = 'split' | 'reader' | 'console';
 
+const emptySubscribe = () => () => {};
+function useIsMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
+
 export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number; onNavigate: (route: string) => void }) {
+  const mounted = useIsMounted();
   const t = useT();
   const lang = useLang();
   const [module, setModule] = useState<Module | null>(null);
@@ -55,8 +61,14 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   const [splitRatio, setSplitRatio] = useState<number>(50); // percentage for left panel
   const [isDragging, setIsDragging] = useState(false);
   const [practiceTask, setPracticeTask] = useState(0);
-  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [prevModuleNum, setPrevModuleNum] = useState(moduleNumber);
+  if (prevModuleNum !== moduleNumber) {
+    setPrevModuleNum(moduleNumber);
+    setModule(null);
+    setLoadError(false);
+  }
 
   const progress = useProgressStore();
   const mp = useProgressStore((s) => s.modules[`module-${String(moduleNumber).padStart(2, '0')}`]);
@@ -68,10 +80,7 @@ export function ModulePage({ moduleNumber, onNavigate }: { moduleNumber: number;
   const touch = useProgressStore((s) => s.touch);
 
   useEffect(() => {
-    setMounted(true);
     let alive = true;
-    setLoadError(false);
-    setModule(null);
     loadModule(moduleNumber)
       .then((m) => {
         if (!alive) return;
@@ -1029,24 +1038,17 @@ function StatCard({ label, value }: { label: string; value: string }) {
 }
 
 function Confetti({ onceKey }: { onceKey: string }) {
-  const [fire, setFire] = useState(false);
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let seen = false;
+  const [fire] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
     try {
-      seen = sessionStorage.getItem(onceKey) === '1';
+      if (sessionStorage.getItem(onceKey) === '1') return false;
+      sessionStorage.setItem(onceKey, '1');
+      return true;
     } catch {
-      /* private mode */
+      return true;
     }
-    if (!seen) {
-      setFire(true);
-      try {
-        sessionStorage.setItem(onceKey, '1');
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [onceKey]);
+  });
 
   const pieces = useMemo(
     () =>
