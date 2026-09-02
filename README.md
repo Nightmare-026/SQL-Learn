@@ -152,36 +152,47 @@ Because SQL Learn has zero backend database requirements, it can be deployed in 
 ```text
 SQL-Learn/
 ├── public/
-│   └── sql-wasm/               # SQLite WebAssembly binary (sql-wasm.wasm)
+│   ├── favicon.svg             # Application favicon
+│   ├── logo.svg                # SQL Learn brand vector logo
+│   └── sql-wasm/               # SQLite WebAssembly binaries (sql-wasm.wasm)
 ├── src/
 │   ├── app/
 │   │   ├── globals.css         # Tailwind CSS v4 design tokens and syntax styles
 │   │   ├── layout.tsx          # Root layout with fonts, metadata & viewport
-│   │   └── page.tsx            # Main hash router (Landing, Roadmap, Sandbox, Settings)
+│   │   └── page.tsx            # Main hash router (Landing, Roadmap, Sandbox, Projects, Settings)
 │   ├── components/
-│   │   └── sqllearn/
-│   │       ├── CurriculumRoadmap.tsx       # 60-module visual roadmap with filters
-│   │       ├── ModulePage.tsx              # Resizable split-screen workspace
-│   │       ├── PracticeConsole.tsx         # SQL editor, schema explorer & live results
-│   │       ├── SQLLifecycleVisualizer.tsx  # 7-stage visual execution order simulator
-│   │       ├── AnimatedTutorial.tsx        # Dynamic code typing & row highlight engine
-│   │       ├── QuizTab.tsx                 # Interactive module quizzes with scoring
-│   │       ├── SQLDisplay.tsx              # Syntax-highlighted code tables & chips
-│   │       └── Diagram.tsx                 # Relational schema and Venn diagrams
+│   │   ├── sqllearn/
+│   │   │   ├── CurriculumRoadmap.tsx       # 60-module visual roadmap with filters
+│   │   │   ├── ModulePage.tsx              # Resizable split-screen workspace
+│   │   │   ├── PracticeConsole.tsx         # SQL editor, schema explorer & live results
+│   │   │   ├── LazyPracticeConsole.tsx     # Lazy-loaded code splitting wrapper
+│   │   │   ├── SQLLifecycleVisualizer.tsx  # 7-stage visual execution order simulator
+│   │   │   ├── AnimatedTutorial.tsx        # Dynamic code typing & row highlight engine
+│   │   │   ├── QuizTab.tsx                 # Interactive module quizzes with scoring
+│   │   │   ├── SQLDisplay.tsx              # Syntax-highlighted code tables & chips
+│   │   │   └── Diagram.tsx                 # Relational schema and Venn diagrams
+│   │   └── ui/                             # Radix UI + Tailwind accessible primitives
 │   ├── content/
 │   │   ├── datasets/                       # Seed SQL schemas (School, E-Commerce, Analytics)
-│   │   └── modules/                        # 60 fully-authored modules (M01 – M60)
+│   │   ├── modules/                        # 60 fully-authored modules (M01 – M60)
+│   │   ├── projects/                       # 5 industry-grade capstone SQL projects
+│   │   └── locales.ts                      # Bilingual translation strings (EN/HI)
+│   ├── hooks/
+│   │   ├── use-mobile.ts                   # Responsive breakpoint hook (useSyncExternalStore)
+│   │   └── use-toast.ts                    # Toast notification state hook
 │   ├── lib/
 │   │   ├── content/registry.ts             # Module registry and level categorization
 │   │   ├── progress/store.ts               # Zustand store + JSON export/import
+│   │   ├── progress/unlock.ts              # Track progression and unlock rules
 │   │   ├── sql/
 │   │   │   ├── engine.ts                   # sql.js WebAssembly context & runner
 │   │   │   ├── tokenizer.ts               # Custom SQL syntax tokenizer
 │   │   │   ├── validator.ts               # Isolated reference validation & diff engine
 │   │   │   └── errorMatcher.ts            # Bilingual friendly error translator
-│   │   └── i18n/store.ts                   # English & Hinglish translation dictionaries
+│   │   ├── i18n/store.ts                   # English & Hinglish translation store
+│   │   └── utils.ts                        # Tailwind class merge utilities (clsx/twMerge)
 │   └── types/
-│       ├── content.ts                      # TypeScript schemas for modules & tasks
+│       ├── content.ts                      # TypeScript schemas for modules, tasks & datasets
 │       └── progress.ts                     # User progress & stats type definitions
 ├── .env.example                # Sample environment configuration
 ├── next.config.ts              # Security headers (CSP, X-Frame-Options, WASM eval)
