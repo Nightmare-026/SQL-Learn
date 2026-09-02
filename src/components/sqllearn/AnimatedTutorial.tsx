@@ -83,7 +83,7 @@ function TutorialPlayer({ module, steps }: { module: Module; steps: TutorialStep
   // Row-highlight trigger: when typing reaches the WHERE/ON/HAVING/GROUP BY clause
   const triggerIdx = useMemo(() => {
     const m = fullCode.toUpperCase().match(/\b(WHERE|HAVING|GROUP\s+BY|ON)\b/);
-    return m ? m.index : fullCode.length;
+    return m ? (m.index ?? fullCode.length) : fullCode.length;
   }, [fullCode]);
   const rowsActive = typedChars >= triggerIdx;
 

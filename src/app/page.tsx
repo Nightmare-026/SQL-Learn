@@ -3,13 +3,14 @@
 // ============ TopBar + hash router shell + all pages (single route app) ============
 
 import React, { Component, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type ErrorInfo } from 'react';
-import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle, RotateCw, Zap, Play, Award, MousePointerClick, Wrench, Lightbulb, Target, Keyboard } from 'lucide-react';
+import { GraduationCap, Search, Globe, Settings, ChevronDown, PlayCircle, BookOpen, Terminal, FlaskConical, Lock, CheckCircle2, TrendingUp, Trophy, Database, ArrowRight, Star, ClipboardList, FileText, AlertTriangle, RotateCw, Zap, Play, Award, MousePointerClick, Wrench, Lightbulb, Target, Keyboard, Compass, Map } from 'lucide-react';
 import { MODULE_INDEX, TOTAL_MODULES, TOTAL_TASKS, TOTAL_PROJECTS, TOTAL_QUIZZES, loadProjects, LEVEL_META, levelOfModule, searchModules } from '@/lib/content/registry';
 import { useProgressStore, useProgressSummary } from '@/lib/progress/store';
 import { useLangStore, useLang, useT } from '@/lib/i18n/store';
 import { isModuleUnlocked } from '@/lib/progress/unlock';
 import { nextTargetModule } from '@/lib/progress/unlock';
 import { ModulePage } from '@/components/sqllearn/ModulePage';
+import { CurriculumRoadmap } from '@/components/sqllearn/CurriculumRoadmap';
 import { LazyPracticeConsole, ConsoleSuspense } from '@/components/sqllearn/LazyPracticeConsole';
 import { DbContext, ENGINE_LIMITS } from '@/lib/sql/engine';
 import { SQLChip, ResultTable } from '@/components/sqllearn/SQLDisplay';
@@ -120,9 +121,10 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
 }
 
 function PageRouter({ route, onNavigate }: { route: string; onNavigate: (r: string) => void }) {
-  // routes: / /dashboard /module/N /projects /project/ID /search /sandbox /settings
+  // routes: / /dashboard /roadmap /module/N /projects /project/ID /search /sandbox /settings
   if (route === '/') return <RootSwitch onNavigate={onNavigate} />;
   if (route === '/dashboard') return <DashboardPage onNavigate={onNavigate} />;
+  if (route === '/roadmap') return <CurriculumRoadmap onNavigate={onNavigate} />;
   const moduleMatch = route.match(/^\/module\/(\d+)$/);
   if (moduleMatch) return <ModulePage moduleNumber={Number(moduleMatch[1])} onNavigate={onNavigate} />;
   if (route === '/projects') return <ProjectsPage onNavigate={onNavigate} />;
@@ -177,13 +179,26 @@ function TopBar({ route, onNavigate }: { route: string; onNavigate: (r: string) 
 
   return (
     <header className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-neutral-200">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-3 h-14">
           <button onClick={() => onNavigate('/')} className="flex items-center gap-2 shrink-0 group">
             <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center group-hover:bg-brand-700 transition">
               <GraduationCap className="w-4.5 h-4.5 text-white" />
             </div>
             <span className="font-heading font-bold text-neutral-900 hidden sm:block">SQL Learn</span>
+          </button>
+
+          {/* Roadmap direct button */}
+          <button
+            onClick={() => onNavigate('/roadmap')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold transition ${
+              route === '/roadmap'
+                ? 'bg-brand-50 text-brand-700 border border-brand-200'
+                : 'text-neutral-700 hover:bg-neutral-100'
+            }`}
+          >
+            <Compass className="w-4 h-4 text-brand-600" />
+            <span className="hidden md:inline">Roadmap</span>
           </button>
 
           {/* Modules dropdown */}
@@ -242,6 +257,9 @@ function TopBar({ route, onNavigate }: { route: string; onNavigate: (r: string) 
                     })}
                   </div>
                   <div className="border-t border-neutral-200 bg-neutral-50 p-1.5 flex gap-1">
+                    <button onClick={() => { onNavigate('/roadmap'); setMenuOpen(false); }} className="flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 transition flex items-center justify-center gap-1">
+                      <Compass className="w-3.5 h-3.5" /> Roadmap
+                    </button>
                     <button onClick={() => { onNavigate('/sandbox'); setMenuOpen(false); }} className="flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-white transition flex items-center justify-center gap-1">
                       <FlaskConical className="w-3.5 h-3.5" /> {t('nav.sandbox')}
                     </button>
@@ -307,7 +325,7 @@ function Footer() {
   const t = useT();
   return (
     <footer className="mt-auto border-t border-neutral-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-500">
         <span>{t('footer.about')}</span>
         <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {t('footer.madeWith')}</span>
       </div>
@@ -347,7 +365,7 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
     <div>
       {/* hero */}
       <section className="relative overflow-hidden border-b border-neutral-200 bg-gradient-to-b from-brand-50/70 via-white to-white">
-        <div className="max-w-5xl mx-auto px-4 pt-14 pb-16 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-16 text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm">
             <Zap className="w-3.5 h-3.5" aria-hidden="true" /> {t('landing.hero.badge')}
           </span>
@@ -364,6 +382,12 @@ function LandingPage({ onNavigate }: { onNavigate: (r: string) => void }) {
               className="rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition"
             >
               <Play className="w-4 h-4 inline -mt-0.5 mr-1" aria-hidden="true" /> {t('landing.cta.start')}
+            </button>
+            <button
+              onClick={() => onNavigate('/roadmap')}
+              className="rounded-xl border border-brand-300 bg-brand-50/50 px-6 py-3 text-sm font-semibold text-brand-700 hover:border-brand-400 hover:bg-brand-100/60 transition flex items-center gap-1.5"
+            >
+              <Compass className="w-4 h-4" /> <span>Curriculum Roadmap</span>
             </button>
             <button
               onClick={() => onNavigate('/sandbox')}
@@ -415,7 +439,7 @@ WHERE city = 'Delhi';`}</pre>
       </section>
 
       {/* features */}
-      <section className="max-w-5xl mx-auto px-4 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <h2 className="font-heading text-2xl font-bold text-neutral-800 text-center mb-8">{t('landing.features.title')}</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f) => (
@@ -432,7 +456,7 @@ WHERE city = 'Delhi';`}</pre>
 
       {/* how you learn — 3-step pedagogy journey */}
       <section className="border-t border-neutral-200 bg-gradient-to-b from-brand-50/40 to-white">
-        <div className="max-w-5xl mx-auto px-4 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <h2 className="font-heading text-2xl font-bold text-neutral-800 text-center mb-2">{t('landing.journey.title')}</h2>
           <p className="text-center text-sm text-neutral-500 mb-10 max-w-xl mx-auto">{t('landing.journey.sub')}</p>
           <div className="grid sm:grid-cols-3 gap-4 sm:gap-6" role="list">
@@ -454,7 +478,7 @@ WHERE city = 'Delhi';`}</pre>
 
       {/* levels */}
       <section className="border-t border-neutral-200 bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
           <h2 className="font-heading text-2xl font-bold text-neutral-800 text-center mb-2">{t('landing.stats.title')}</h2>
           <p className="text-center text-sm text-neutral-500 mb-8">{t('landing.hero.sub').split('.')[0]}.</p>
           <div className="grid sm:grid-cols-3 gap-4">
@@ -481,7 +505,7 @@ WHERE city = 'Delhi';`}</pre>
 
       {/* final CTA */}
       <section className="border-t border-neutral-200 bg-gradient-to-b from-white to-brand-50/60">
-        <div className="max-w-2xl mx-auto px-4 py-14 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 text-center">
           <h2 className="font-heading text-2xl font-bold text-neutral-800 mb-2">{t('landing.hero.title1')} <span className="text-brand-600">{t('landing.hero.title2')}</span></h2>
           <button onClick={() => onNavigate(`/module/${target}`)} className="mt-4 rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 transition">
             <Play className="w-4 h-4 inline -mt-0.5 mr-1" aria-hidden="true" /> {t('landing.cta.start')}
@@ -527,7 +551,7 @@ function DashboardPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold text-neutral-900">{t('dash.welcome')}</h1>
         <p className="text-sm text-neutral-500 mt-1">{t('app.tagline')} · {summary.overallPercent}%</p>
@@ -603,8 +627,9 @@ function DashboardPage({ onNavigate }: { onNavigate: (r: string) => void }) {
       </div>
 
       {/* quick actions */}
-      <div className="grid grid-cols-3 gap-3 pb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-4">
         {[
+          { icon: Compass, label: 'Roadmap', route: '/roadmap' },
           { icon: FlaskConical, label: t('nav.sandbox'), route: '/sandbox' },
           { icon: Trophy, label: t('nav.projects'), route: '/projects' },
           { icon: Search, label: t('nav.search'), route: '/search' },
@@ -655,10 +680,10 @@ function ProjectsPage({ onNavigate }: { onNavigate: (r: string) => void }) {
 
   const sorted = [...projects].sort((a, b) => a.order - b.order);
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-1 flex items-center gap-2"><Trophy className="w-6 h-6 text-brand-600" aria-hidden="true" /> {t('projects.title')}</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-2xl">{t('projects.desc')}</p>
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sorted.map((p) => {
           const pp = progress.projects[p.id];
           const done = pp?.tasksCompleted.length ?? 0;
@@ -736,7 +761,7 @@ function ProjectPage({ projectId, onNavigate }: { projectId: string; onNavigate:
   const task = project.tasks[activeIdx];
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <button onClick={() => onNavigate('/projects')} className="text-xs text-neutral-500 hover:text-brand-600 mb-3 inline-flex items-center gap-1">
         <ArrowRight className="w-3 h-3 rotate-180" /> {t('projects.title')}
       </button>
@@ -808,71 +833,73 @@ function SearchPage({ onNavigate }: { onNavigate: (r: string) => void }) {
   const hits = useMemo(() => searchModules(q, level, status, statusFn), [q, level, status, statusFn, progress]);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-4 flex items-center gap-2"><Search className="w-6 h-6 text-brand-600" aria-hidden="true" /> {t('search.title')}</h1>
-      <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm mb-5 space-y-3">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t('search.placeholder')}
-          className="w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition"
-          autoFocus
-        />
-        <div className="flex flex-wrap gap-2">
-          <select value={level} onChange={(e) => setLevel(e.target.value as never)} className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 bg-white outline-none">
-            <option value="all">{t('search.level')}: {t('search.all')}</option>
-            <option value="beginner">🟢 {t('level.beginner')}</option>
-            <option value="intermediate">🟡 {t('level.intermediate')}</option>
-            <option value="advanced">🔴 {t('level.advanced')}</option>
-          </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value as never)} className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 bg-white outline-none">
-            <option value="all">{t('search.status')}: {t('search.all')}</option>
-            <option value="completed">✓ {t('status.completed')}</option>
-            <option value="unlocked">🔓 {t('status.unlocked')}</option>
-            <option value="locked">🔒 {t('status.locked')}</option>
-          </select>
-          {(q || level !== 'all' || status !== 'all') && (
-            <button onClick={() => { setQ(''); setLevel('all'); setStatus('all'); }} className="rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs text-neutral-500 hover:border-neutral-400 transition">
-              {t('search.clear')}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <p className="text-xs text-neutral-500 mb-3">
-        {hits.length} {t('search.found')}{q && <> “{q}”</>}
-      </p>
-
-      {hits.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-500">
-          {t('search.none')}<br /><span className="text-xs text-neutral-400">{t('search.suggest')}</span>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {hits.map(({ entry }) => {
-            const st = statusFn(entry.number);
-            return (
-              <button
-                key={entry.id}
-                disabled={st === 'locked'}
-                onClick={() => onNavigate(`/module/${entry.number}`)}
-                className={`w-full rounded-xl border bg-white p-4 text-left flex items-center gap-3 transition ${
-                  st === 'locked' ? 'border-neutral-200 opacity-60' : 'border-neutral-200 hover:border-brand-300 hover:shadow-sm'
-                }`}
-              >
-                <span className="text-[10px] text-neutral-400 w-8 shrink-0">M{entry.number}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-neutral-800 truncate">{lang === 'hi' ? entry.titleHi : entry.titleEn}</div>
-                  <div className="text-[11px] text-neutral-500 truncate">{entry.concepts.slice(0, 5).join(' · ')}</div>
-                </div>
-                <span className={`text-[10px] font-bold shrink-0 ${st === 'completed' ? 'text-success-600' : st === 'unlocked' ? 'text-brand-600' : 'text-neutral-400'}`}>
-                  {st === 'completed' ? '✓' : st === 'unlocked' ? '🔓' : '🔒'}
-                </span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-4 flex items-center gap-2"><Search className="w-6 h-6 text-brand-600" aria-hidden="true" /> {t('search.title')}</h1>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm mb-5 space-y-3">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t('search.placeholder')}
+            className="w-full rounded-xl border border-neutral-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition"
+            autoFocus
+          />
+          <div className="flex flex-wrap gap-2">
+            <select value={level} onChange={(e) => setLevel(e.target.value as never)} className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 bg-white outline-none">
+              <option value="all">{t('search.level')}: {t('search.all')}</option>
+              <option value="beginner">🟢 {t('level.beginner')}</option>
+              <option value="intermediate">🟡 {t('level.intermediate')}</option>
+              <option value="advanced">🔴 {t('level.advanced')}</option>
+            </select>
+            <select value={status} onChange={(e) => setStatus(e.target.value as never)} className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 bg-white outline-none">
+              <option value="all">{t('search.status')}: {t('search.all')}</option>
+              <option value="completed">✓ {t('status.completed')}</option>
+              <option value="unlocked">🔓 {t('status.unlocked')}</option>
+              <option value="locked">🔒 {t('status.locked')}</option>
+            </select>
+            {(q || level !== 'all' || status !== 'all') && (
+              <button onClick={() => { setQ(''); setLevel('all'); setStatus('all'); }} className="rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs text-neutral-500 hover:border-neutral-400 transition">
+                {t('search.clear')}
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
-      )}
+
+        <p className="text-xs text-neutral-500 mb-3">
+          {hits.length} {t('search.found')}{q && <> “{q}”</>}
+        </p>
+
+        {hits.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-500">
+            {t('search.none')}<br /><span className="text-xs text-neutral-400">{t('search.suggest')}</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {hits.map(({ entry }) => {
+              const st = statusFn(entry.number);
+              return (
+                <button
+                  key={entry.id}
+                  disabled={st === 'locked'}
+                  onClick={() => onNavigate(`/module/${entry.number}`)}
+                  className={`w-full rounded-xl border bg-white p-4 text-left flex items-center gap-3 transition ${
+                    st === 'locked' ? 'border-neutral-200 opacity-60' : 'border-neutral-200 hover:border-brand-300 hover:shadow-sm'
+                  }`}
+                >
+                  <span className="text-[10px] text-neutral-400 w-8 shrink-0">M{entry.number}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-neutral-800 truncate">{lang === 'hi' ? entry.titleHi : entry.titleEn}</div>
+                    <div className="text-[11px] text-neutral-500 truncate">{entry.concepts.slice(0, 5).join(' · ')}</div>
+                  </div>
+                  <span className={`text-[10px] font-bold shrink-0 ${st === 'completed' ? 'text-success-600' : st === 'unlocked' ? 'text-brand-600' : 'text-neutral-400'}`}>
+                    {st === 'completed' ? '✓' : st === 'unlocked' ? '🔓' : '🔒'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -885,7 +912,7 @@ function SandboxPage() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-5">
         <h1 className="font-heading text-2xl font-bold text-neutral-900">🧪 {t('sandbox.title')}</h1>
         <p className="text-sm text-neutral-600 mt-1 max-w-2xl leading-relaxed">{t('sandbox.desc')}</p>
@@ -1062,8 +1089,9 @@ function SettingsPage() {
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-      <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-1">⚙️ {t('settings.title')}</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-3xl mx-auto space-y-5">
+        <h1 className="font-heading text-2xl font-bold text-neutral-900 mb-1">⚙️ {t('settings.title')}</h1>
 
       {/* language */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -1170,6 +1198,7 @@ function SettingsPage() {
           </button>
         )}
       </section>
+      </div>
     </div>
   );
 }
